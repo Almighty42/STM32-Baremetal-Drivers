@@ -1,11 +1,11 @@
 #include <stdint.h>
 
 #define RCC_BASE 0x40023800
-#define RCC_AHB1ENR RCC_BASE + 0x30000000
+#define RCC_AHB1ENR (RCC_BASE + 0x30)
 
 #define GPIOA_BASE 0x40020000
-#define GPIOA_MODER GPIOA_BASE
-#define GPIOA_ODR GPIOA_BASE + 0x14000000
+#define GPIOA_MODER (GPIOA_BASE + 0x00)
+#define GPIOA_ODR (GPIOA_BASE + 0x14)
 
 int main(void)
 {
@@ -15,6 +15,7 @@ int main(void)
 
 	// Configuring PA5 as OUTPUT
 	uint32_t* gpioa_moder = (uint32_t*)(GPIOA_MODER);
+	*gpioa_moder &= ~(3u << 10);
 	*gpioa_moder |= (1u << 10);
 
 	// Flipping PA5 value
@@ -22,11 +23,11 @@ int main(void)
 	while (1) {
 		// Sets PA5 to ON
 		*gpioa_odr |= (1u << 5);
-		for (uint32_t i = 0; i < 1000; i++) {
+		for (volatile uint32_t i = 0; i < 10000; i++) {
 		}
 		// Sets PA5 to OFF
 		*gpioa_odr &= ~(1u << 5);
-		for (uint32_t i = 0; i < 1000; i++) {
+		for (volatile uint32_t i = 0; i < 10000; i++) {
 		}
 	}
 }

@@ -3,7 +3,7 @@ CFLAGS = -mcpu=cortex-m4 -mthumb -Wall -Wextra -O2
 LDFLAGS = -T stm32f401RE.ld -Wl,--gc-sections
 
 TARGET = blink.elf
-SOURCES = main.c startup_stm32f401.s
+SOURCES = main.c startup_stm32f401.s system.c stubs.c
 
 $(TARGET): $(SOURCES)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(SOURCES)
