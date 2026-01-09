@@ -20,5 +20,14 @@ $(TARGET): $(OBJECTS)
 all: $(TARGET)  
 	rm -f $(OBJECTS) *.map
 
+full: $(TARGET)
+
 clean:
 	rm -f $(TARGET) $(OBJECTS) *.map
+
+load:
+	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
+
+flash: 
+	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
+		-c "program $(TARGET) verify reset exit"
