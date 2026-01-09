@@ -7,19 +7,24 @@
 #define GPIOA_MODER (GPIOA_BASE + 0x00)
 #define GPIOA_ODR (GPIOA_BASE + 0x14)
 
+#define SET_BIT(REG, BIT) ((REG) |= (1U << (BIT)))
+#define CLEAR_BIT(REG, BIT) ((REG) &= ~(1U << (BIT)))
+
 int main(void)
 {
 	// Enabling GPIOA Clock ( RCC )
-	uint32_t* volatile gpioa_clock = (uint32_t*)(RCC_AHB1ENR);
+	volatile uint32_t* const gpioa_clock =
+	    (volatile uint32_t*)(RCC_AHB1ENR);
 	*gpioa_clock |= (1u << 0);
 
 	// Configuring PA5 as OUTPUT
-	uint32_t* volatile gpioa_moder = (uint32_t*)(GPIOA_MODER);
+	volatile uint32_t* const gpioa_moder =
+	    (volatile uint32_t*)(GPIOA_MODER);
 	*gpioa_moder &= ~(3u << 10);
 	*gpioa_moder |= (1u << 10);
 
 	// Flipping PA5 value
-	uint32_t* volatile gpioa_odr = (uint32_t*)(GPIOA_ODR);
+	volatile uint32_t* const gpioa_odr = (volatile uint32_t*)(GPIOA_ODR);
 	while (1) {
 		// Sets PA5 to ON
 		*gpioa_odr |= (1u << 5);
