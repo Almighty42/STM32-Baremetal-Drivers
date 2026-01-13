@@ -1,38 +1,47 @@
+#include "stm32f401RE_header.h"
 #include <stdint.h>
 
-#define RCC_BASE 0x40023800
-#define RCC_AHB1ENR (RCC_BASE + 0x30)
-
-#define GPIOA_BASE 0x40020000
-#define GPIOA_MODER (GPIOA_BASE + 0x00)
-#define GPIOA_ODR (GPIOA_BASE + 0x14)
-
-#define SET_BIT(REG, BIT) ((REG) |= (1U << (BIT)))
-#define CLEAR_BIT(REG, BIT) ((REG) &= ~(1U << (BIT)))
+void GPIO_Clock_Enable(void);
+void GPIO_Pin_Init(void);
 
 int main(void)
 {
-	// Enabling GPIOA Clock ( RCC )
-	volatile uint32_t* const gpioa_clock =
-	    (volatile uint32_t*)(RCC_AHB1ENR);
-	*gpioa_clock |= (1u << 0);
+	// Enables RCC clock for GPIO_A
+	GPIO_Clock_Enable();
 
-	// Configuring PA5 as OUTPUT
-	volatile uint32_t* const gpioa_moder =
-	    (volatile uint32_t*)(GPIOA_MODER);
-	*gpioa_moder &= ~(3u << 10);
-	*gpioa_moder |= (1u << 10);
+	// Prepares the GPIO_A for digital output and sets other settings
+	GPIO_Pin_Init();
 
-	// Flipping PA5 value
-	volatile uint32_t* const gpioa_odr = (volatile uint32_t*)(GPIOA_ODR);
 	while (1) {
-		// Sets PA5 to ON
-		*gpioa_odr |= (1u << 5);
-		for (volatile uint32_t i = 0; i < 1000000; i++) {
-		}
-		// Sets PA5 to OFF
-		*gpioa_odr &= ~(1u << 5);
-		for (volatile uint32_t i = 0; i < 1000000; i++) {
-		}
+		// LED ON
+		SET_BIT(GPIOA->ODR, 5);
+		for (uint32_t i = 0; i < 100000; i++)
+			;
+		// LED OFF
+		CLEAR_BIT(GPIOA->ODR, 5);
+		for (uint32_t i = 0; i < 100000; i++)
+			;
 	}
+}
+
+void GPIO_Clock_Enable(void)
+{
+	SET_BIT(RCC->AHB1ENR, 0);
+}
+
+void GPIO_Pin_Init(void)
+{
+	// Set mode as digital output
+	CLEAR_FIELD_2BIT(GPIOA->MODER, 10);
+	SET_BIT(GPIOA->MODER, 10);
+
+	// Set output type as push-pull
+	CLEAR_BIT(GPIOA->OTYPER, 5);
+
+	// Set output speed as low
+	// GPIOB->OSPEEDR &= ~(3UL << 4);
+	CLEAR_FIELD_2BIT(GPIOA->OSPEEDR, 10);
+
+	// Set no pull up, no pull down
+	CLEAR_FIELD_2BIT(GPIOA->PUPDR, 10);
 }

@@ -1,0 +1,76 @@
+#ifndef STM32F401RE_HEADER
+#define STM32F401RE_HEADER
+
+#include <stdint.h>
+
+#define __IO volatile
+
+typedef struct
+{
+	__IO uint32_t MODER;
+	__IO uint32_t OTYPER;
+	__IO uint32_t OSPEEDR;
+	__IO uint32_t PUPDR;
+	__IO uint32_t IDR;
+	__IO uint32_t ODR;
+	__IO uint32_t BSRR;
+	__IO uint32_t LCKR;
+	__IO uint32_t AFRL;
+	__IO uint32_t AFRH;
+} GPIO_TypeDef;
+
+#define GPIOA ((GPIO_TypeDef*)0x40020000)
+#define GPIOB ((GPIO_TypeDef*)0x40020400)
+#define GPIOC ((GPIO_TypeDef*)0x40020800)
+#define GPIOD ((GPIO_TypeDef*)0x40020C00)
+#define GPIOE ((GPIO_TypeDef*)0x40021000)
+#define GPIOH ((GPIO_TypeDef*)0x40021C00)
+
+typedef struct
+{
+	__IO uint32_t CR;
+	__IO uint32_t PLLCFGR;
+	__IO uint32_t CFGR;
+	__IO uint32_t CIR;
+	__IO uint32_t AHB1RSTR;
+	__IO uint32_t AHB2RSTR;
+	uint32_t res0;
+	uint32_t res1;
+	__IO uint32_t APB1RSTR;
+	__IO uint32_t APB2RSTR;
+	uint32_t res2;
+	uint32_t res3;
+	__IO uint32_t AHB1ENR;
+	__IO uint32_t AHB2ENR;
+	uint32_t res4;
+	uint32_t res5;
+	__IO uint32_t APB1ENR;
+	__IO uint32_t APB2ENR;
+	uint32_t res6;
+	uint32_t res7;
+	__IO uint32_t AHB1LPENR;
+	__IO uint32_t AHB2LPENR;
+	uint32_t res8;
+	uint32_t res9;
+	__IO uint32_t APB1LPENR;
+	__IO uint32_t APB2LPENR;
+	uint32_t res10;
+	uint32_t res11;
+	__IO uint32_t BDCR;
+	__IO uint32_t CSR;
+	uint32_t res12;
+	uint32_t res13;
+	__IO uint32_t SSCGR;
+	__IO uint32_t PLLI2SCFGR;
+	__IO uint32_t DCKCFGR;
+} RCC_TypeDef;
+#define RCC ((RCC_TypeDef*)0x40023800)
+
+#define SET_BIT(reg, bit) ((reg) |= (1UL << (bit)))
+#define CLEAR_BIT(reg, bit) ((reg) &= ~(1UL << (bit)))
+#define TOGGLE_BIT(reg, bit) ((reg) ^= (1UL << (bit)))
+#define READ_BIT(reg, bit) ((reg) & (1UL << (bit)))
+#define IS_BIT_SET(reg, bit) (READ_BIT(reg, bit) != 0UL)
+#define CLEAR_FIELD_2BIT(reg, pos) ((reg) &= ~(3U << (pos)))
+
+#endif
