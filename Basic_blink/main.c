@@ -45,3 +45,48 @@ void GPIO_Pin_Init(void)
 	// Set no pull up, no pull down
 	CLEAR_FIELD_2BIT(GPIOA->PUPDR, 10);
 }
+
+void SysTick_Init(uint32_t ticks)
+{
+	// Disable SysTick IRQ and SysTick timer
+	SysTick->CTRL = 0;
+
+	// Set reload register
+	SysTick->LOAD = ticks - 1;
+
+	// Set interrupt priority of SysTick
+	// Make SysTick less urgent (highest priority number)
+	// __NVIC PRIO_BITS: number of bits for priority levels, defined in
+	// CMSIS NVIC_SetPriority (SysTick_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
+
+	// Reset the SysTick counter value
+	SysTick->VAL = 0;
+
+	// Select processor clock
+	// 1 = processor clock, 0 = external clock
+	SET_BIT(SysTick->CTRL, 2);
+
+	// Enables SysTick exception request
+	// 1 = counting down to zero asserts the SysTick exception request
+	// 0 = counting down to zero does NOT assert the SysTick exception
+	// request
+	SET_BIT(SysTick->CTRL, 1);
+
+	// Enable the SysTick timer
+	SET_BIT(SysTick->CTRL, 0);
+}
+
+void SysTick_Handler(void)
+{
+	// Time delay is a global variable declared as volatile
+	if (TimeDelay > 0) // Prevent it from being negative
+		TimeDelay--;
+}
+
+void Delay(uint32_t nTime)
+{
+	// nTime - specifies the delay time length
+	TimeDelay = nTime; // Time delay must be declared as volatile
+	while (TimeDelay != 0)
+		; // Busy wait
+}

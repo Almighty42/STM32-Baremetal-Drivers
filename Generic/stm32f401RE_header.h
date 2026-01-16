@@ -3,7 +3,19 @@
 
 #include <stdint.h>
 
-#define __IO volatile
+#define __I volatile const // Read only
+#define __O volatile       // Write only
+#define __IO volatile      // Read / Write
+
+typedef struct
+{
+	__IO uint32_t CTRL;
+	__IO uint32_t LOAD;
+	__IO uint32_t VAL;
+	__IO uint32_t CALIB;
+} SysTick_Type;
+
+#define SysTick ((SysTick_Type*)0xE000E010)
 
 typedef struct
 {
