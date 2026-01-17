@@ -7,6 +7,16 @@
 #define __O volatile       // Write only
 #define __IO volatile      // Read / Write
 
+#define SET_BIT(reg, bit) ((reg) |= (1UL << (bit)))
+#define TOGGLE_BIT(reg, bit) ((reg) ^= (1UL << (bit)))
+
+#define READ_BIT(reg, bit) ((reg) & (1UL << (bit)))
+#define IS_BIT_SET(reg, bit) (READ_BIT(reg, bit) != 0UL)
+
+#define CLEAR_BIT(reg, bit) ((reg) &= ~(1UL << (bit)))
+#define CLEAR_FIELD_2BIT(reg, pos) ((reg) &= ~(3U << (pos)))
+#define CLEAR_BYTE(reg, pos) ((reg) &= ~(0xFF << (pos)))
+
 // INFO: SysTick
 
 typedef struct
@@ -18,6 +28,7 @@ typedef struct
 } SysTick_Type;
 
 #define SysTick ((SysTick_Type*)0xE000E010)
+#define SysTick_IRQn 15
 
 // INFO: GPIO
 
@@ -106,17 +117,8 @@ typedef struct
 	__O uint32_t STIR;
 
 } NVIC_Type;
-#define NVIC ((NVIC_Type*)0xE000E000);
+#define NVIC ((NVIC_Type*)0xE000E000)
 #define __NVIC_PRIO_BITS 4
-
-static inline void NVIC_Set_IRQ_Priority(uint32_t IRQn, uint32_t priority)
-{
-	uint32_t IPRn = (uint32_t)IRQn >> 2;          // IRQn / 4
-	uint32_t shift = ((uint32_t)IRQn & 0x3U) * 8; // (IRQn % 4) * 8
-	uint32_t priority_field = (priority & ((1U << __NVIC_PRIO_BITS) - 1U))
-	                          << (8U - __NVIC_PRIO_BITS);
-	uint32_t reg = NVIC->IPR[IPRn];
-}
 
 typedef struct
 {
@@ -138,13 +140,29 @@ typedef struct
 	__IO uint32_t AFSR;
 
 } SCB_Type;
-#define SCB ((SCB_Type*)0xE000ED00);
+#define SCB ((SCB_Type*)0xE000ED00)
 
-#define SET_BIT(reg, bit) ((reg) |= (1UL << (bit)))
-#define CLEAR_BIT(reg, bit) ((reg) &= ~(1UL << (bit)))
-#define TOGGLE_BIT(reg, bit) ((reg) ^= (1UL << (bit)))
-#define READ_BIT(reg, bit) ((reg) & (1UL << (bit)))
-#define IS_BIT_SET(reg, bit) (READ_BIT(reg, bit) != 0UL)
-#define CLEAR_FIELD_2BIT(reg, pos) ((reg) &= ~(3U << (pos)))
+static inline void NVIC_Set_IRQ_Priority(uint32_t IRQn, uint32_t priority)
+{
+	uint32_t ipr_n = (uint32_t)IRQn >> 2;         // IRQn / 4
+	uint32_t shift = ((uint32_t)IRQn & 0x3U) * 8; // (IRQn % 4) * 8
+	uint32_t priority_field = (priority & ((1U << __NVIC_PRIO_BITS) - 1U))
+	                          << (8U - __NVIC_PRIO_BITS);
+	uint32_t ipr = NVIC->IPR[ipr_n];
+	CLEAR_BYTE(ipr, shift);
+	ipr |= (priority_field << shift);
+	NVIC->IPR[ipr_n] = ipr;
+}
+
+static inline void SCB_set_SysTick_Priority(uint32_t priority)
+{
+	uint32_t priority_field = (priority & ((1U << __NVIC_PRIO_BITS) - 1U))
+	                          << (8U - __NVIC_PRIO_BITS);
+	uint32_t shift = 24U;
+	uint32_t shpr = SCB->SHPR3;
+	CLEAR_BYTE(shpr, shift);
+	shpr |= (priority_field << shift);
+	SCB->SHPR3 = shpr;
+}
 
 #endif

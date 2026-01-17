@@ -1,8 +1,14 @@
 #include "stm32f401RE_header.h"
 #include <stdint.h>
 
+#define DELAY_MS 500
+
+volatile uint32_t time_delay = 0;
+
 void GPIO_Clock_Enable(void);
 void GPIO_Pin_Init(void);
+void SysTick_Init(uint32_t ticks);
+void Delay(uint32_t time);
 
 int main(void)
 {
@@ -12,15 +18,16 @@ int main(void)
 	// Prepares the GPIO_A for digital output and sets other settings
 	GPIO_Pin_Init();
 
+	// Initialize SysTick for 16MHz
+	SysTick_Init(16000000U);
+
 	while (1) {
 		// LED ON
 		SET_BIT(GPIOA->ODR, 5);
-		for (uint32_t i = 0; i < 100000; i++)
-			;
+		Delay(DELAY_MS);
 		// LED OFF
 		CLEAR_BIT(GPIOA->ODR, 5);
-		for (uint32_t i = 0; i < 100000; i++)
-			;
+		Delay(DELAY_MS);
 	}
 }
 
@@ -46,47 +53,34 @@ void GPIO_Pin_Init(void)
 	CLEAR_FIELD_2BIT(GPIOA->PUPDR, 10);
 }
 
-void SysTick_Init(uint32_t ticks)
+void SysTick_Init(uint32_t core_clock_hz)
 {
-	// Disable SysTick IRQ and SysTick timer
+	// Disable SysTick IRQ and SysTick counter
 	SysTick->CTRL = 0;
-
 	// Set reload register
-	SysTick->LOAD = ticks - 1;
-
+	uint32_t reload = core_clock_hz / 1000U - 1U;
+	SysTick->LOAD = reload;
 	// Set interrupt priority of SysTick
-	// Make SysTick less urgent (highest priority number)
-	// __NVIC PRIO_BITS: number of bits for priority levels, defined in
-	// CMSIS NVIC_SetPriority (SysTick_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
-
+	NVIC_Set_IRQ_Priority(SysTick_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
 	// Reset the SysTick counter value
 	SysTick->VAL = 0;
-
-	// Select processor clock
-	// 1 = processor clock, 0 = external clock
+	// Processor clock
 	SET_BIT(SysTick->CTRL, 2);
-
 	// Enables SysTick exception request
-	// 1 = counting down to zero asserts the SysTick exception request
-	// 0 = counting down to zero does NOT assert the SysTick exception
-	// request
 	SET_BIT(SysTick->CTRL, 1);
-
-	// Enable the SysTick timer
+	// Enables SysTick timer
 	SET_BIT(SysTick->CTRL, 0);
+}
+
+void Delay(uint32_t time)
+{
+	time_delay = time;
+	while (time_delay != 0)
+		;
 }
 
 void SysTick_Handler(void)
 {
-	// Time delay is a global variable declared as volatile
-	if (TimeDelay > 0) // Prevent it from being negative
-		TimeDelay--;
-}
-
-void Delay(uint32_t nTime)
-{
-	// nTime - specifies the delay time length
-	TimeDelay = nTime; // Time delay must be declared as volatile
-	while (TimeDelay != 0)
-		; // Busy wait
+	if (time_delay > 0)
+		time_delay--;
 }
