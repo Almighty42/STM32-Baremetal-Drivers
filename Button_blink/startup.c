@@ -220,14 +220,15 @@ void Default_Handler(void)
 
 void Reset_Handler(void)
 {
-	uint32_t size = (uint32_t)(&_edata - &_sdata);
+	uint32_t size = (uint32_t)&_edata - (uint32_t)&_sdata;
+
 	uint8_t* ptr_dst = (uint8_t*)&_sdata;
 	uint8_t* ptr_src = (uint8_t*)&_etext;
 
 	for (uint32_t i = 0; i < size; i++)
 		*ptr_dst++ = *ptr_src++;
 
-	size = (uint32_t)(&_ebss - &_sbss);
+	size = (uint32_t)&_ebss - (uint32_t)&_sbss;
 	ptr_dst = (uint8_t*)&_sbss;
 
 	for (uint32_t j = 0; j < size; j++)

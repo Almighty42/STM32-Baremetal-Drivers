@@ -1,11 +1,15 @@
 #include "stm32f401RE_header.h"
 #include <stdint.h>
 
+#define DEBOUNCE_MS 100U
+
+volatile uint32_t g_ms_ticks = 0;
+
 void GPIO_Clock_Enable(void);
 void GPIO_Pin_Init_LED(void);
 void GPIO_Pin_Init_Button(void);
-void wait_ms(uint32_t ms);
-uint8_t is_button_pressed();
+void EXTI_Init(void);
+void SysTick_Init(uint32_t ticks);
 
 int main(void)
 {
@@ -16,10 +20,10 @@ int main(void)
 	GPIO_Pin_Init_LED();
 	GPIO_Pin_Init_Button();
 
+	SysTick_Init(16000000U);
+	EXTI_Init();
+
 	while (1) {
-		if (is_button_pressed()) {
-			TOGGLE_BIT(GPIOA->ODR, 5);
-		}
 	}
 }
 
@@ -59,30 +63,65 @@ void GPIO_Pin_Init_Button(void)
 	// CLEAR_FIELD_2BIT(GPIOA->OSPEEDR, 10);
 
 	// Set no pull up, no pull down
-	CLEAR_FIELD_2BIT(GPIOA->PUPDR, 26);
+	CLEAR_FIELD_2BIT(GPIOC->PUPDR, 26);
 }
 
-void wait_ms(uint32_t ms)
+void EXTI_Init(void)
 {
-	for (uint32_t i = 0; i < ms; i++)
-		for (uint32_t j = 0; j < 255; j++)
-			;
+	// Enable SYSCFG clock
+	SET_BIT(RCC->APB2ENR, 14);
+
+	// Select PC13 as trigger source for EXTI 13
+	CLEAR_FIELD_4BIT(SYSCFG->EXTICR4, 4);
+	SET_BIT(SYSCFG->EXTICR4, 5);
+
+	// Enable rising edge trigger for EXTI 13
+	SET_BIT(EXTI->RTSR, 13);
+
+	// Disable falling edge trigger for EXTI 13
+	CLEAR_BIT(EXTI->FTSR, 13);
+
+	// Enable EXTI 13 interrupt
+	SET_BIT(EXTI->IMR, 13);
+
+	// Set EXTI 13 priority to 1
+	NVIC_Set_IRQ_Priority(10, 1);
+
+	// Enable EXTI 13 interrupt in NVIC
+	NVIC_Enable_IRQ(10);
 }
 
-uint8_t is_button_pressed()
+void SysTick_Init(uint32_t ticks)
 {
-	if (READ_BIT(GPIOC->IDR, 13) == 0UL)
-		return 0;
-	uint32_t counter = 0;
-	for (uint32_t i = 0; i < 10; i++) {
-		wait_ms(5);
-		if (READ_BIT(GPIOC->IDR, 13) == 0UL)
-			counter = 0;
-		else {
-			counter += 1;
-			if (counter >= 4)
-				return 1;
+	uint32_t reload = ticks / 1000U - 1U;
+	SysTick->LOAD = reload;
+	SysTick->VAL = 0;
+	SET_BIT(SysTick->CTRL, 2);
+	SET_BIT(SysTick->CTRL, 1);
+	SET_BIT(SysTick->CTRL, 0);
+}
+
+void EXTI15_10_IRQHandler(void)
+{
+	static uint32_t last_event_ms = 0;
+
+	// Check for EXTI 3 interrupt flag
+	if (IS_BIT_SET(EXTI->PR, 13)) {
+		uint32_t now = g_ms_ticks;
+		if ((now - last_event_ms) >= DEBOUNCE_MS) {
+			last_event_ms = now;
+			// Toggle LED
+			if (IS_BIT_SET(GPIOA->ODR, 5))
+				CLEAR_BIT(GPIOA->ODR, 5);
+			else
+				SET_BIT(GPIOA->ODR, 5);
 		}
+		// Clear interrupt pending request
+		SET_BIT(EXTI->PR, 13);
 	}
-	return 0;
+}
+
+void SysTick_Handler(void)
+{
+	g_ms_ticks++;
 }

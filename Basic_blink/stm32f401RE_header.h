@@ -15,6 +15,7 @@
 
 #define CLEAR_BIT(reg, bit) ((reg) &= ~(1UL << (bit)))
 #define CLEAR_FIELD_2BIT(reg, pos) ((reg) &= ~(3U << (pos)))
+#define CLEAR_FIELD_4BIT(reg, pos) ((reg) &= ~(0xF << (pos)))
 #define CLEAR_BYTE(reg, pos) ((reg) &= ~(0xFF << (pos)))
 
 // INFO: SysTick
@@ -95,6 +96,20 @@ typedef struct
 } RCC_TypeDef;
 #define RCC ((RCC_TypeDef*)0x40023800)
 
+// NOTE: SYSCFG
+
+typedef struct
+{
+	__IO uint32_t MEMRMP;
+	__IO uint32_t PMC;
+	__IO uint32_t EXTICR1;
+	__IO uint32_t EXTICR2;
+	__IO uint32_t EXTICR3;
+	__IO uint32_t EXTICR4;
+	__IO uint32_t CMPCR;
+} SYSCFG_Type;
+#define SYSCFG ((SYSCFG_Type*)0x40013800)
+
 // INFO: NVIC
 
 typedef struct
@@ -142,16 +157,36 @@ typedef struct
 } SCB_Type;
 #define SCB ((SCB_Type*)0xE000ED00)
 
+// NOTE: EXTI
+
+typedef struct
+{
+	__IO uint32_t IMR;
+	__IO uint32_t EMR;
+	__IO uint32_t RTSR;
+	__IO uint32_t FTSR;
+	__IO uint32_t SWIER;
+	__IO uint32_t PR;
+} EXTI_Type;
+#define EXTI ((EXTI_Type*)0x40013C00)
+
 static inline void NVIC_Set_IRQ_Priority(uint32_t IRQn, uint32_t priority)
 {
-	uint32_t ipr_n = (uint32_t)IRQn >> 2;         // IRQn / 4
-	uint32_t shift = ((uint32_t)IRQn & 0x3U) * 8; // (IRQn % 4) * 8
+	uint32_t ipr_n = IRQn / 4;
+	uint32_t shift = (IRQn % 4) * 8;
 	uint32_t priority_field = (priority & ((1U << __NVIC_PRIO_BITS) - 1U))
 	                          << (8U - __NVIC_PRIO_BITS);
 	uint32_t ipr = NVIC->IPR[ipr_n];
 	CLEAR_BYTE(ipr, shift);
 	ipr |= (priority_field << shift);
 	NVIC->IPR[ipr_n] = ipr;
+}
+
+static inline void NVIC_Enable_IRQ(uint32_t IRQn)
+{
+	uint32_t iser_n = IRQn / 32;
+	uint32_t shift = IRQn % 32;
+	NVIC->ISER[iser_n] = (1UL << shift);
 }
 
 static inline void SCB_set_SysTick_Priority(uint32_t priority)

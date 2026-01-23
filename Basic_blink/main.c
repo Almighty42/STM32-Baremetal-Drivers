@@ -53,12 +53,12 @@ void GPIO_Pin_Init(void)
 	CLEAR_FIELD_2BIT(GPIOA->PUPDR, 10);
 }
 
-void SysTick_Init(uint32_t core_clock_hz)
+void SysTick_Init(uint32_t ticks)
 {
 	// Disable SysTick IRQ and SysTick counter
 	SysTick->CTRL = 0;
 	// Set reload register
-	uint32_t reload = core_clock_hz / 1000U - 1U;
+	uint32_t reload = ticks / 1000U - 1U;
 	SysTick->LOAD = reload;
 	// Set interrupt priority of SysTick
 	NVIC_Set_IRQ_Priority(SysTick_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
