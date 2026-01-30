@@ -1,6 +1,2 @@
-./Generic/Arm_Cortex_M4_Reference_Manual.pdf
-./Generic/PM0214_Programming_Manual.pdf
-./Generic/RM0368_Reference_Manual.pdf
-./Generic/STM32_F401RE_Schematic.pdf
-./Generic/stm32f401re.pdf
-./Generic/UM1724_User_Manual.pdf
+./Generic/*.pdf
+./Other

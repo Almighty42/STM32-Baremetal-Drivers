@@ -3,6 +3,7 @@ ARC = cortex-m4
 
 CFLAGS = -mcpu=$(ARC) -mthumb -mfloat-abi=soft -std=gnu11 -Wall -O0
 LDFLAGS = -nostartfiles -nodefaultlibs -mcpu=$(ARC) -mthumb -mfloat-abi=soft -T stm32_ls.ld -Wl,-Map=blink.map
+DBFLAGS = -g3
 
 TARGET = blink.elf
 SOURCES = main.c startup.c
@@ -17,10 +18,13 @@ $(TARGET): $(OBJECTS)
 %.o: %.s
 	$(CC) $(CFLAGS) -c $< -o $@
 
-all: $(TARGET)  
+build: $(TARGET)  
 	rm -f $(OBJECTS) *.map
 
-full: $(TARGET)
+build_debug:
+	$(MAKE) CFLAGS="$(CFLAGS) $(DBFLAGS)" \
+	        LDFLAGS="$(LDFLAGS) $(DBFLAGS)" \
+		$(TARGET)
 
 clean:
 	rm -f $(TARGET) $(OBJECTS) *.map
