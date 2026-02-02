@@ -114,25 +114,22 @@ typedef struct
 
 typedef struct
 {
-	uint32_t res0;
-	__I uint32_t ICTR;
-	uint32_t res1[28];
 	__IO uint32_t ISER[8];
-	uint32_t res2[24];
+	uint32_t res0[24];
 	__IO uint32_t ICER[8];
-	uint32_t res3[24];
+	uint32_t res1[24];
 	__IO uint32_t ISPR[8];
-	uint32_t res4[24];
+	uint32_t res2[24];
 	__IO uint32_t ICPR[8];
-	uint32_t res5[24];
+	uint32_t res3[24];
 	__I uint32_t IABR[8];
-	uint32_t res6[36];
-	__IO uint32_t IPR[60];
-	uint32_t res7[824];
+	uint32_t res4[36];
+	__IO uint8_t IPR[240];
+	uint32_t res5[644];
 	__O uint32_t STIR;
 
 } NVIC_Type;
-#define NVIC ((NVIC_Type*)0xE000E000)
+#define NVIC ((NVIC_Type*)0xE000E100)
 #define __NVIC_PRIO_BITS 4
 
 typedef struct

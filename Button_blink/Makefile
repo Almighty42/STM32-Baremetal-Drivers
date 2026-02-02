@@ -30,7 +30,7 @@ clean:
 	rm -f $(TARGET) $(OBJECTS) *.map
 
 load:
-	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
+	-pkill -x openocd || true && openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
 
 flash: 
 	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
