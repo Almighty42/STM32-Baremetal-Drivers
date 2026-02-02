@@ -65,7 +65,6 @@ void EXTI_Init(void)
 	// Select PC13 as trigger source for EXTI 13
 	CLEAR_FIELD_4BIT(SYSCFG->EXTICR4, 4);
 	SYSCFG->EXTICR4 |= (0x2U << 4);
-	// SET_BIT(SYSCFG->EXTICR4, 5);
 
 	// Disable rising edge trigger for EXTI 13
 	CLEAR_BIT(EXTI->RTSR, 13);
