@@ -1,0 +1,391 @@
+#ifndef STM32F401RE_HEADER
+#define STM32F401RE_HEADER
+
+#include <stdint.h>
+#include <stddef.h>
+
+// NOTE: --- Base Addresses --
+
+#define FLASH_BASE_ADDR			0x08000000UL			// Flash
+#define SRAM_BASE_ADDR			0x20000000UL			// SRAM
+#define ROM_BASE_ADDR			0x1FFF0000UL			// System memory
+
+// AHBx and APBx Bus peripheral base adddresses
+
+#define PERIPH_BASE			0x40000000UL			// Peripheral address start
+#define APB1PERIPH_BASE_ADDR		PERIPH_BASE			// APB1
+#define APB2PERIPH_BASE_ADDR		0x40010000UL			// APB2
+#define AHB1PERIPH_BASE_ADDR		0x40020000UL			// AHB1
+#define AHB2PERIPH_BASE_ADDR		0x50000000UL			// AHB2
+
+// Base addresses of peripherals which are hanging on AHB1 bus
+
+#define GPIOA_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x0000)		// GPIOA
+#define GPIOB_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x0400)		// GPIOB
+#define GPIOC_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x0800)		// GPIOC
+#define GPIOD_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x0C00)		// GPIOD
+#define GPIOE_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x1000)		// GPIOE
+#define GPIOH_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x1C00)		// GPIOH
+#define CRC_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x3000)		// CRC
+#define RCC_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x3800)		// RCC
+#define FLASH_INTERFACE_BASE_ADDR	(AHB1PERIPH_BASE_ADDR + 0x3C00) // FLASH_INTERFACE
+#define DMA1_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x6000)		// DMA1
+#define DMA2_BASE_ADDR		(AHB1PERIPH_BASE_ADDR + 0x6400)		// DMA2
+
+// Base addresses of peripherals which are hanging on AHB2 bus
+
+#define USB_OTG_FS_BASE_ADDR		AHB1PERIPH_BASE_ADDR		// USB OTG FS
+
+// Base addresses of peripherals which are hanging on APB1 bus
+
+#define TIM2_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x0000)		// TIM2
+#define TIM3_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x0400)		// TIM3
+#define TIM4_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x0800)		// TIM4
+#define TIM5_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x0C00)		// TIM5
+#define RTC_BKP_BASE_ADDR	(APB1PERIPH_BASE_ADDR + 0x2800)		// RTC_BKP
+#define WWDG_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x2C00)		// WWDG
+#define IWDG_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x3000)		// IWDG
+#define I2S2EXT_BASE_ADDR	(APB1PERIPH_BASE_ADDR + 0x3400)		// I2S2EXT
+#define SPI2_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x3800)		// SPI2
+#define SPI3_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x3C00)		// SPI3
+#define I2S3EXT_BASE_ADDR	(APB1PERIPH_BASE_ADDR + 0x4000)		// I2S3EXT
+#define USART2_BASE_ADDR	(APB1PERIPH_BASE_ADDR + 0x4400)		// USART2
+#define I2C1_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x5400)		// I2C1
+#define I2C2_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x5800)		// I2C2
+#define I2C3_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x5C00)		// I2C3
+#define PWR_BASE_ADDR		(APB1PERIPH_BASE_ADDR + 0x7000)		// PWR
+
+// Base addresses of peripherals which are hanging on APB2 bus
+
+#define TIM1_BASE_ADDR		(APB2PERIPH_BASE_ADDR + 0x0000)		// TIM1
+#define USART1_BASE_ADDR	(APB2PERIPH_BASE_ADDR + 0x1000)		// USART1
+#define USART6_BASE_ADDR	(APB2PERIPH_BASE_ADDR + 0x1400)		// USART6
+#define ADC1_BASE_ADDR		(APB2PERIPH_BASE_ADDR + 0x2000)		// ADC1
+#define SDIO_BASE_ADDR		(APB2PERIPH_BASE_ADDR + 0x2C00)		// SDIO
+#define SPI1_BASE_ADDR		(APB2PERIPH_BASE_ADDR + 0x3000)		// SPI1
+#define SPI4_BASE_ADDR		(APB2PERIPH_BASE_ADDR + 0x3400)		// SPI4
+#define SYSCFG_BASE_ADDR	(APB2PERIPH_BASE_ADDR + 0x3800)		// SYSCFG
+#define EXTI_BASE_ADDR		(APB2PERIPH_BASE_ADDR + 0x3C00)		// EXTI
+#define TIM9_BASE_ADDR		(APB2PERIPH_BASE_ADDR + 0x4000)		// TIM9
+#define TIM10_BASE_ADDR		(APB2PERIPH_BASE_ADDR + 0x4400)		// TIM10
+#define TIM11_BASE_ADDR		(APB2PERIPH_BASE_ADDR + 0x4800)		// TIM11
+
+// NOTE: --- Peripheral register definition structures ---
+
+#define __I				volatile const			// Read only
+#define __O				volatile			// Write only
+#define __IO				volatile			// Read / Write
+
+#define ENABLE				1
+#define DISABLE				1
+#define SET				ENABLE
+#define RESET				DISABLE
+#define GPIO_PIN_SET			SET
+#define GPIO_PIN_RESET			RESET
+#define USART_PIN_SET			SET
+#define USART_PIN_RESET			RESET
+
+#define SET_BIT(reg, bit)		((reg) |= (1UL << (bit)))
+#define TOGGLE_BIT(reg, bit)		((reg) ^= (1UL << (bit)))
+#define SET_BITS_BY_VAR(reg, val)	((reg) |= (val))
+
+#define READ_BIT(reg, bit)		((reg) & (1UL << (bit)))
+#define IS_BIT_SET(reg, bit)		(READ_BIT(reg, bit) != 0UL)
+
+#define CLEAR_BIT(reg, bit)		((reg) &= ~(1UL << (bit)))
+#define CLEAR_FIELD_2BIT(reg, pos)	((reg) &= ~(3U << (pos)))
+#define CLEAR_FIELD_4BIT(reg, pos)	((reg) &= ~(0xF << (pos)))
+#define CLEAR_BYTE(reg, pos)		((reg) &= ~(0xFF << (pos)))
+
+// NOTE: --- TypeDefs ---
+
+typedef struct {
+	__IO uint32_t DR;
+	__IO uint32_t IDR;
+	__O uint32_t CR;
+} CRC_TypeDef;
+
+// TODO: TypeDef PWR
+
+typedef struct
+{
+	__IO uint32_t CR;
+	__IO uint32_t PLLCFGR;
+	__IO uint32_t CFGR;
+	__IO uint32_t CIR;
+	__IO uint32_t AHB1RSTR;
+	__IO uint32_t AHB2RSTR;
+	uint32_t res0;
+	uint32_t res1;
+	__IO uint32_t APB1RSTR;
+	__IO uint32_t APB2RSTR;
+	uint32_t res2;
+	uint32_t res3;
+	__IO uint32_t AHB1ENR;
+	__IO uint32_t AHB2ENR;
+	uint32_t res4;
+	uint32_t res5;
+	__IO uint32_t APB1ENR;
+	__IO uint32_t APB2ENR;
+	uint32_t res6;
+	uint32_t res7;
+	__IO uint32_t AHB1LPENR;
+	__IO uint32_t AHB2LPENR;
+	uint32_t res8;
+	uint32_t res9;
+	__IO uint32_t APB1LPENR;
+	__IO uint32_t APB2LPENR;
+	uint32_t res10;
+	uint32_t res11;
+	__IO uint32_t BDCR;
+	__IO uint32_t CSR;
+	uint32_t res12;
+	uint32_t res13;
+	__IO uint32_t SSCGR;
+	__IO uint32_t PLLI2SCFGR;
+	__IO uint32_t DCKCFGR;
+} RCC_TypeDef;
+
+typedef struct
+{
+	__IO uint32_t MEMRMP;
+	__IO uint32_t PMC;
+	__IO uint32_t EXTICR[4];
+	__IO uint32_t CMPCR;
+} SYSCFG_Type;
+
+typedef struct
+{
+	__IO uint32_t MODER;
+	__IO uint32_t OTYPER;
+	__IO uint32_t OSPEEDR;
+	__IO uint32_t PUPDR;
+	__IO uint32_t IDR;
+	__IO uint32_t ODR;
+	__IO uint32_t BSRR;
+	__IO uint32_t LCKR;
+	__IO uint32_t AFRL;
+	__IO uint32_t AFRH;
+} GPIO_TypeDef;
+
+// TODO: TypeDef DMA
+
+typedef struct
+{
+	__IO uint32_t ISER[8];
+	uint32_t res0[24];
+	__IO uint32_t ICER[8];
+	uint32_t res1[24];
+	__IO uint32_t ISPR[8];
+	uint32_t res2[24];
+	__IO uint32_t ICPR[8];
+	uint32_t res3[24];
+	__I uint32_t IABR[8];
+	uint32_t res4[36];
+	__IO uint8_t IPR[240];
+	uint32_t res5[644];
+	__O uint32_t STIR;
+
+} NVIC_Type;
+
+typedef struct
+{
+	__IO uint32_t IMR;
+	__IO uint32_t EMR;
+	__IO uint32_t RTSR;
+	__IO uint32_t FTSR;
+	__IO uint32_t SWIER;
+	__IO uint32_t PR;
+} EXTI_Type;
+
+// TODO: TypeDef ADC
+
+// TODO: TypeDef TIM
+
+// TODO: TypeDef IWDG
+
+// TODO: TypeDef WWDG
+
+// TODO: TypeDef RTC
+
+// TODO: TypeDef I2C
+
+typedef struct {
+	__IO uint32_t SR;
+	__IO uint32_t DR;
+	__IO uint32_t BRR;
+	__IO uint32_t CR1;
+	__IO uint32_t CR2;
+	__IO uint32_t CR3;
+	__IO uint32_t GTPR;
+} USART_TypeDef;
+
+// TODO: TypeDef SPI
+
+// TODO: TypeDef SDIO
+
+// TODO: TypeDef OTG_FS
+
+// NOTE: --- TypeDef Macros ---
+
+#define CRC				((CRC_TypeDef*)CRC_BASE_ADDR)
+
+// TODO: TypeDef Macro PWR
+
+#define RCC				((RCC_TypeDef*)RCC_BASE_ADDR)
+
+#define SYSCFG				((SYSCFG_Type*)SYSCFG_BASE_ADDR)
+
+#define GPIOA				((GPIO_TypeDef*)GPIOA_BASE_ADDR)
+#define GPIOB				((GPIO_TypeDef*)GPIOB_BASE_ADDR)
+#define GPIOC				((GPIO_TypeDef*)GPIOC_BASE_ADDR)
+#define GPIOD				((GPIO_TypeDef*)GPIOD_BASE_ADDR)
+#define GPIOE				((GPIO_TypeDef*)GPIOE_BASE_ADDR)
+#define GPIOH				((GPIO_TypeDef*)GPIOH_BASE_ADDR)
+
+// TODO: TypeDef Macro DMA
+
+#define NVIC ((NVIC_Type*)NVIC_BASE_ADDR)
+#define EXTI ((EXTI_Type*)EXTI_BASE_ADDR)
+
+// TODO: TypeDef Macro ADC
+
+// TODO: TypeDef Macro TIM
+
+// TODO: TypeDef Macro IWDG
+
+// TODO: TypeDef Macro WWDG
+
+// TODO: TypeDef Macro RTC
+
+// TODO: TypeDef Macro I2C
+
+#define USART1	((USART_TypeDef*)USART1_BASE_ADDR)
+#define USART2	((USART_TypeDef*)USART2_BASE_ADDR)
+#define USART6	((USART_TypeDef*)USART6_BASE_ADDR)
+
+// TODO: TypeDef Macro SPI
+
+// TODO: TypeDef Macro SDIO
+
+// TODO: TypeDef Macro OTG_FS
+
+#define NVIC_BASE_ADDR		0xE000E100
+#define __NVIC_PRIO_BITS	4
+
+// NOTE: AHB2 peripheral register structures
+
+// NOTE: APB1 peripheral register structures
+
+// NOTE: APB2 peripheral register structures
+
+// NOTE: Clock enable/disable macros for GPIOx peripherals
+
+#define GPIOA_PCLK_EN()		SET_BIT(RCC->AHB1ENR, 0);
+#define GPIOB_PCLK_EN()		SET_BIT(RCC->AHB1ENR, 1);
+#define GPIOC_PCLK_EN()		SET_BIT(RCC->AHB1ENR, 2);
+#define GPIOD_PCLK_EN()		SET_BIT(RCC->AHB1ENR, 3);
+#define GPIOE_PCLK_EN()		SET_BIT(RCC->AHB1ENR, 4);
+#define GPIOH_PCLK_EN()		SET_BIT(RCC->AHB1ENR, 7);
+
+#define GPIOA_PCLK_DI()		CLEAR_BIT(RCC->AHB1ENR, 0);
+#define GPIOB_PCLK_DI()		CLEAR_BIT(RCC->AHB1ENR, 1);
+#define GPIOC_PCLK_DI()		CLEAR_BIT(RCC->AHB1ENR, 2);
+#define GPIOD_PCLK_DI()		CLEAR_BIT(RCC->AHB1ENR, 3);
+#define GPIOE_PCLK_DI()		CLEAR_BIT(RCC->AHB1ENR, 4);
+#define GPIOH_PCLK_DI()		CLEAR_BIT(RCC->AHB1ENR, 7);
+
+// NOTE: Clock enable/disable macros for I2Cx peripherals
+
+#define I2C1_PCLK_EN()		SET_BIT(RCC->APB1ENR, 21);
+#define I2C2_PCLK_EN()		SET_BIT(RCC->APB1ENR, 22);
+#define I2C3_PCLK_EN()		SET_BIT(RCC->APB1ENR, 23);
+
+#define I2C1_PCLK_DI()		CLEAR_BIT(RCC->APB1ENR, 21);
+#define I2C2_PCLK_DI()		CLEAR_BIT(RCC->APB1ENR, 22);
+#define I2C3_PCLK_DI()		CLEAR_BIT(RCC->APB1ENR, 23);
+
+// NOTE: Clock enable/disable macros for SPIx peripherals
+
+#define SPI1_PCLK_EN()		SET_BIT(RCC->APB2ENR, 12);
+#define SPI2_PCLK_EN()		SET_BIT(RCC->APB1ENR, 14);
+#define SPI3_PCLK_EN()		SET_BIT(RCC->APB1ENR, 15);
+#define SPI4_PCLK_EN()		SET_BIT(RCC->APB2ENR, 13);
+
+#define SPI1_PCLK_DI()		CLEAR_BIT(RCC->APB2ENR, 12);
+#define SPI2_PCLK_DI()		CLEAR_BIT(RCC->APB1ENR, 14);
+#define SPI3_PCLK_DI()		CLEAR_BIT(RCC->APB1ENR, 15);
+#define SPI4_PCLK_DI()		CLEAR_BIT(RCC->APB2ENR, 13);
+
+// NOTE: Clock enable/disable macros for USARTx peripherals
+
+#define USART1_PCLK_EN()	SET_BIT(RCC->APB2ENR, 4);
+#define USART2_PCLK_EN()	SET_BIT(RCC->APB1ENR, 17);
+#define USART6_PCLK_EN()	SET_BIT(RCC->APB2ENR, 5);
+
+#define USART1_PCLK_DI()	CLEAR_BIT(RCC->APB2ENR, 4);
+#define USART2_PCLK_DI()	CLEAR_BIT(RCC->APB1ENR, 17);
+#define USART6_PCLK_DI()	CLEAR_BIT(RCC->APB2ENR, 5);
+
+// NOTE: Clock enable macros for SYSCFG peripherals
+
+#define SYSCFG_PCLK_EN()	SET_BIT(RCC->APB2ENR, 14);
+
+#define SYSCFG_PCLK_DI()	CLEAR_BIT(RCC->APB2ENR, 14);
+
+// NOTE: Miscellaneous macros
+
+#define GPIO_BASE_ADDR_TO_CODE(x)	((x == GPIOA) ? 0 : \
+					(x == GPIOB) ? 1 : \
+					(x == GPIOC) ? 2 : \
+					(x == GPIOD) ? 3 : \
+					(x == GPIOE) ? 4 : \
+					(x == GPIOH) ? 7 : 0 )
+
+
+// NOTE: Macros for reseting GPIOx peripherals
+
+#define GPIOA_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 0); CLEAR_BIT(RCC->AHB1RSTR, 0);} while(0)
+#define GPIOB_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 1); CLEAR_BIT(RCC->AHB1RSTR, 1);} while(0)
+#define GPIOC_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 2); CLEAR_BIT(RCC->AHB1RSTR, 2);} while(0)
+#define GPIOD_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 3); CLEAR_BIT(RCC->AHB1RSTR, 3);} while(0)
+#define GPIOE_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 4); CLEAR_BIT(RCC->AHB1RSTR, 4);} while(0)
+#define GPIOH_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 7); CLEAR_BIT(RCC->AHB1RSTR, 7);} while(0)
+
+// NOTE: Macros for reseting USARTx peripherals
+
+#define USART1_REG_RESET()	do{SET_BIT(RCC->APB2ENR, 4); CLEAR_BIT(RCC->APB2ENR, 4);} while(0)
+#define USART2_REG_RESET()	do{SET_BIT(RCC->APB1ENR, 17); CLEAR_BIT(RCC->APB1ENR, 17);} while(0)
+#define USART6_REG_RESET()	do{SET_BIT(RCC->APB2ENR, 5); CLEAR_BIT(RCC->APB2ENR, 5);} while(0)
+
+// NOTE: Macros for IRQ numbers
+
+#define IRQ_NO_EXTI0		6
+#define IRQ_NO_EXTI1		7
+#define IRQ_NO_EXTI2		8
+#define IRQ_NO_EXTI3		9
+#define IRQ_NO_EXTI4		10
+#define IRQ_NO_EXTI9_5		23
+#define IRQ_NO_EXTI15_10	40
+
+// NOTE: Macros for NVIC priorities
+
+#define NVIC_IRQ_PRIO_0		0
+#define NVIC_IRQ_PRIO_1		1
+#define NVIC_IRQ_PRIO_2		2
+#define NVIC_IRQ_PRIO_3		3
+#define NVIC_IRQ_PRIO_4		4
+#define NVIC_IRQ_PRIO_5		5
+#define NVIC_IRQ_PRIO_6		6
+#define NVIC_IRQ_PRIO_7		7
+#define NVIC_IRQ_PRIO_8		8
+#define NVIC_IRQ_PRIO_9		9
+#define NVIC_IRQ_PRIO_10	10
+#define NVIC_IRQ_PRIO_11	11
+#define NVIC_IRQ_PRIO_12	12
+#define NVIC_IRQ_PRIO_13	13
+#define NVIC_IRQ_PRIO_14	14
+#define NVIC_IRQ_PRIO_15	15
+
+#endif
+
