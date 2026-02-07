@@ -2,6 +2,15 @@
 #include <stdint.h>
 
 /********************************************************************************
+ *
+ * TODO: Future plans for this driver:
+ * 1. Implement return values for configuration functions to indicate successful
+ * / failed operations
+ * 2. Add GPIO_lock_pin(GPIO_TypeDef *p_GPIOx, uint8_t pin_n) function
+ *
+ *******************************************************************************/
+
+/********************************************************************************
  * @fn			- GPIO_peri_clk_control
  *
  * @brief			- Enables or disables peripheral clock for a
@@ -13,7 +22,7 @@
  * @return			- None
  *
  * @Note			- None
- */
+ *******************************************************************************/
 
 void GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
 {
@@ -69,93 +78,106 @@ void GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
  * @return			- None
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 void GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 {
-	uint32_t temp = 0;
+	// TODO:
+	// Validate p_GPIO_handle pointer
+	// Validate if p_GPIO_handle->p_GPIOx is pointing to the actual base
+	// address
+
+	// uint32_t temp = 0;
 	uint32_t GPIO_pin_offset_2 =
 	    (2 * p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number);
 	uint32_t GPIO_pin_offset_1 =
 	    p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number;
+
+	uint32_t pin_n = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number;
+	// TODO: Validate pin_n
+
 	// Mode
-	if (p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Mode <= GPIO_MODE_ANALOG) {
-		temp = (p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Mode
-		        << GPIO_pin_offset_2);
+	uint8_t mode = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Mode;
+
+	if (mode <= GPIO_MODE_ANALOG) {
+		// Interrupt disabled configuration routine
 		CLEAR_FIELD_2BIT(p_GPIO_handle->p_GPIOx->MODER,
 		                 GPIO_pin_offset_2);
-		SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->MODER, temp);
+		SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->MODER,
+		                mode << GPIO_pin_offset_2);
 	}
 	else {
-		if (p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Mode ==
-		    GPIO_MODE_IT_FT) {
+		// Interrupt enabled configuration routine
+		CLEAR_FIELD_2BIT(p_GPIO_handle->p_GPIOx->MODER,
+		                 GPIO_pin_offset_2);
+
+		if (mode == GPIO_MODE_IT_FT) {
 			SET_BIT(EXTI->FTSR, GPIO_pin_offset_1);
 			CLEAR_BIT(EXTI->RTSR, GPIO_pin_offset_1);
 		}
-		else if (p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Mode ==
-		         GPIO_MODE_IT_RT) {
+		else if (mode == GPIO_MODE_IT_RT) {
 			SET_BIT(EXTI->RTSR, GPIO_pin_offset_1);
 			CLEAR_BIT(EXTI->FTSR, GPIO_pin_offset_1);
 		}
-		else if (p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Mode ==
-		         GPIO_MODE_IT_RFT) {
+		else if (mode == GPIO_MODE_IT_RFT) {
 			SET_BIT(EXTI->FTSR, GPIO_pin_offset_1);
 			SET_BIT(EXTI->RTSR, GPIO_pin_offset_1);
 		}
 
-		uint8_t temp_1 =
-		    p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number / 4;
-		uint8_t temp_2 =
-		    p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number % 4;
+		uint8_t exticr_n = pin_n / 4;
+		uint8_t exticr_offset_n = pin_n % 4;
 		uint8_t portcode =
 		    GPIO_BASE_ADDR_TO_CODE(p_GPIO_handle->p_GPIOx);
 
 		SYSCFG_PCLK_EN();
-		SYSCFG->EXTICR[temp_1] = portcode << (temp_2 * 4);
+		CLEAR_FIELD_4BIT(SYSCFG->EXTICR[exticr_n],
+		                 (exticr_offset_n * 4));
+		SET_BITS_BY_VAR(SYSCFG->EXTICR[exticr_n],
+		                (portcode << (exticr_offset_n * 4)));
+
+		SYSCFG->EXTICR[exticr_n] = portcode << (exticr_offset_n * 4);
 
 		SET_BIT(EXTI->IMR, GPIO_pin_offset_1);
 	}
-	temp = 0;
 
 	// Speed
-	temp = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Speed
-	       << GPIO_pin_offset_2;
+	uint8_t speed = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Speed;
 	CLEAR_FIELD_2BIT(p_GPIO_handle->p_GPIOx->OSPEEDR, GPIO_pin_offset_2);
-	SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->OSPEEDR, temp);
-	temp = 0;
+	SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->OSPEEDR,
+	                speed << GPIO_pin_offset_2);
 
 	// PuPd
-	temp = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_PuPd_Control
-	       << GPIO_pin_offset_2;
+	uint8_t pupd = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_PuPd_Control;
 	CLEAR_FIELD_2BIT(p_GPIO_handle->p_GPIOx->PUPDR, GPIO_pin_offset_2);
-	SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->PUPDR, temp);
-	temp = 0;
+	SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->PUPDR,
+	                pupd << GPIO_pin_offset_2);
 
 	// OTP type
-	temp = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_OTP_Type
-	       << GPIO_pin_offset_1;
+	uint8_t otp = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_OTP_Type;
 	CLEAR_BIT(p_GPIO_handle->p_GPIOx->OTYPER, GPIO_pin_offset_1);
-	SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->OTYPER, temp);
-	temp = 0;
+	SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->OTYPER,
+	                otp << GPIO_pin_offset_1);
 
-	// Alt func
-	if (p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Alt_Fun_Mode ==
-	    GPIO_MODE_ALT) {
-		uint8_t temp_offset =
-		    p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number % 8;
-		temp = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Alt_Fun_Mode
-		       << (4 * temp_offset);
-		if (p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number / 8 == 0) {
-			CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRL,
-			                 temp_offset);
-			SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRL, temp);
-		}
-		else {
-			CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRH,
-			                 temp_offset);
-			SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRH, temp);
-		}
-		temp = 0;
-	}
+	// TODO: Alt func
+
+	// uint8_t alt_func =
+	// p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Alt_Fun_Mode;
+	//
+	// if (alt_func == GPIO_MODE_ALT) {
+	// 	uint8_t temp_offset = pin_n % 8;
+	// 	temp = alt_func << (4 * temp_offset);
+	// 	if (pin_n / 8 == 0) {
+	// 		CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRL,
+	// 		                 temp_offset);
+	// 		SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRL, temp);
+	// 	}
+	// 	else {
+	// 		CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRH,
+	// 		                 temp_offset);
+	// 		SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRH, temp);
+	// 	}
+	// 	temp = 0;
+	// }
 }
 
 /********************************************************************************
@@ -168,7 +190,8 @@ void GPIO_init(GPIO_Handle_t* p_GPIO_handle)
  * @return			- None
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 void GPIO_de_init(GPIO_TypeDef* p_GPIOx)
 {
 	if (p_GPIOx == GPIOA) {
@@ -202,7 +225,8 @@ void GPIO_de_init(GPIO_TypeDef* p_GPIOx)
  * @return			- Value of pin
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 uint8_t GPIO_read_input_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
 {
 	return (uint8_t)((p_GPIOx->IDR >> pin_n) & 0x00000001);
@@ -218,7 +242,8 @@ uint8_t GPIO_read_input_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
  * @return			- Value of port
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 uint16_t GPIO_read_input_port(GPIO_TypeDef* p_GPIOx)
 {
 	return (uint16_t)p_GPIOx->IDR;
@@ -236,7 +261,8 @@ uint16_t GPIO_read_input_port(GPIO_TypeDef* p_GPIOx)
  * @return			- None
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 void GPIO_write_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n, uint8_t val)
 {
 	if (val == GPIO_PIN_SET)
@@ -256,7 +282,8 @@ void GPIO_write_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n, uint8_t val)
  * @return			- None
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 void GPIO_write_output_port(GPIO_TypeDef* p_GPIOx, uint8_t val)
 {
 	p_GPIOx->ODR = val;
@@ -273,7 +300,8 @@ void GPIO_write_output_port(GPIO_TypeDef* p_GPIOx, uint8_t val)
  * @return			- None
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 void GPIO_toggle_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
 {
 	TOGGLE_BIT(p_GPIOx->ODR, pin_n);
@@ -290,9 +318,11 @@ void GPIO_toggle_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
  * @return			- None
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 void GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 {
+	SYSCFG_PCLK_EN();
 	if (EN_or_DI == ENABLE) {
 		if (irq_n < 32)
 			SET_BIT(NVIC->ISER[0], irq_n);
@@ -322,19 +352,26 @@ void GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
  * @return			- None
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 void GPIO_irq_priority_config(uint8_t irq_n, uint8_t irq_prio)
 {
-	uint8_t ipr_x = irq_n / 4;
-	uint8_t ipr_x_section = (irq_n % 4) * 8;
+	// IPR_n[0-59]
+	uint8_t ipr_n = irq_n / 4;
+	// IPR_n IP_n[0-4]
+	uint8_t ipr_n_section = (irq_n % 4) * 8;
 	uint32_t prio_field = (irq_prio & ((1U << __NVIC_PRIO_BITS) - 1U))
 	                      << (8U - __NVIC_PRIO_BITS);
-	uint32_t ipr = NVIC->IPR[ipr_x];
-	CLEAR_BYTE(ipr, ipr_x_section);
-	ipr |= (prio_field << ipr_x_section);
-	NVIC->IPR[ipr_x] = ipr;
 
-	// SET_BIT(NVIC->IPR[irq_n], )
+	// __disable_irq();
+	// TODO: Implement IRQ control for this block
+
+	uint32_t ipr = NVIC->IPR[ipr_n];
+	CLEAR_BYTE(ipr, ipr_n_section);
+	ipr |= (prio_field << ipr_n_section);
+	NVIC->IPR[ipr_n] = ipr;
+
+	// __enable_irq();
 }
 
 /********************************************************************************
@@ -347,7 +384,8 @@ void GPIO_irq_priority_config(uint8_t irq_n, uint8_t irq_prio)
  * @return			- None
  *
  * @Note			- None
- */
+ *******************************************************************************/
+
 void GPIO_irq_handling(uint8_t pin_n)
 {
 	if (IS_BIT_SET(EXTI->PR, pin_n))

@@ -86,8 +86,8 @@
 #define USART_PIN_RESET			RESET
 
 #define SET_BIT(reg, bit)		((reg) |= (1UL << (bit)))
-#define TOGGLE_BIT(reg, bit)		((reg) ^= (1UL << (bit)))
 #define SET_BITS_BY_VAR(reg, val)	((reg) |= (val))
+#define TOGGLE_BIT(reg, bit)		((reg) ^= (1UL << (bit)))
 
 #define READ_BIT(reg, bit)		((reg) & (1UL << (bit)))
 #define IS_BIT_SET(reg, bit)		(READ_BIT(reg, bit) != 0UL)
@@ -273,13 +273,9 @@ typedef struct {
 #define NVIC_BASE_ADDR		0xE000E100
 #define __NVIC_PRIO_BITS	4
 
-// NOTE: AHB2 peripheral register structures
+// NOTE: --- Shortcut macros ---
 
-// NOTE: APB1 peripheral register structures
-
-// NOTE: APB2 peripheral register structures
-
-// NOTE: Clock enable/disable macros for GPIOx peripherals
+// Clock enable/disable macros for GPIOx peripherals
 
 #define GPIOA_PCLK_EN()		SET_BIT(RCC->AHB1ENR, 0);
 #define GPIOB_PCLK_EN()		SET_BIT(RCC->AHB1ENR, 1);
@@ -295,7 +291,7 @@ typedef struct {
 #define GPIOE_PCLK_DI()		CLEAR_BIT(RCC->AHB1ENR, 4);
 #define GPIOH_PCLK_DI()		CLEAR_BIT(RCC->AHB1ENR, 7);
 
-// NOTE: Clock enable/disable macros for I2Cx peripherals
+// Clock enable/disable macros for I2Cx peripherals
 
 #define I2C1_PCLK_EN()		SET_BIT(RCC->APB1ENR, 21);
 #define I2C2_PCLK_EN()		SET_BIT(RCC->APB1ENR, 22);
@@ -305,7 +301,7 @@ typedef struct {
 #define I2C2_PCLK_DI()		CLEAR_BIT(RCC->APB1ENR, 22);
 #define I2C3_PCLK_DI()		CLEAR_BIT(RCC->APB1ENR, 23);
 
-// NOTE: Clock enable/disable macros for SPIx peripherals
+// Clock enable/disable macros for SPIx peripherals
 
 #define SPI1_PCLK_EN()		SET_BIT(RCC->APB2ENR, 12);
 #define SPI2_PCLK_EN()		SET_BIT(RCC->APB1ENR, 14);
@@ -317,7 +313,7 @@ typedef struct {
 #define SPI3_PCLK_DI()		CLEAR_BIT(RCC->APB1ENR, 15);
 #define SPI4_PCLK_DI()		CLEAR_BIT(RCC->APB2ENR, 13);
 
-// NOTE: Clock enable/disable macros for USARTx peripherals
+// Clock enable/disable macros for USARTx peripherals
 
 #define USART1_PCLK_EN()	SET_BIT(RCC->APB2ENR, 4);
 #define USART2_PCLK_EN()	SET_BIT(RCC->APB1ENR, 17);
@@ -327,23 +323,13 @@ typedef struct {
 #define USART2_PCLK_DI()	CLEAR_BIT(RCC->APB1ENR, 17);
 #define USART6_PCLK_DI()	CLEAR_BIT(RCC->APB2ENR, 5);
 
-// NOTE: Clock enable macros for SYSCFG peripherals
+// Clock enable macros for SYSCFG peripherals
 
 #define SYSCFG_PCLK_EN()	SET_BIT(RCC->APB2ENR, 14);
 
 #define SYSCFG_PCLK_DI()	CLEAR_BIT(RCC->APB2ENR, 14);
 
-// NOTE: Miscellaneous macros
-
-#define GPIO_BASE_ADDR_TO_CODE(x)	((x == GPIOA) ? 0 : \
-					(x == GPIOB) ? 1 : \
-					(x == GPIOC) ? 2 : \
-					(x == GPIOD) ? 3 : \
-					(x == GPIOE) ? 4 : \
-					(x == GPIOH) ? 7 : 0 )
-
-
-// NOTE: Macros for reseting GPIOx peripherals
+// Macros for reseting GPIOx peripherals
 
 #define GPIOA_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 0); CLEAR_BIT(RCC->AHB1RSTR, 0);} while(0)
 #define GPIOB_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 1); CLEAR_BIT(RCC->AHB1RSTR, 1);} while(0)
@@ -352,13 +338,22 @@ typedef struct {
 #define GPIOE_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 4); CLEAR_BIT(RCC->AHB1RSTR, 4);} while(0)
 #define GPIOH_REG_RESET()	do{SET_BIT(RCC->AHB1RSTR, 7); CLEAR_BIT(RCC->AHB1RSTR, 7);} while(0)
 
-// NOTE: Macros for reseting USARTx peripherals
+// Macros for reseting USARTx peripherals
 
 #define USART1_REG_RESET()	do{SET_BIT(RCC->APB2ENR, 4); CLEAR_BIT(RCC->APB2ENR, 4);} while(0)
 #define USART2_REG_RESET()	do{SET_BIT(RCC->APB1ENR, 17); CLEAR_BIT(RCC->APB1ENR, 17);} while(0)
 #define USART6_REG_RESET()	do{SET_BIT(RCC->APB2ENR, 5); CLEAR_BIT(RCC->APB2ENR, 5);} while(0)
 
-// NOTE: Macros for IRQ numbers
+// NOTE: --- Miscellaneous macros ---
+
+#define GPIO_BASE_ADDR_TO_CODE(x)	((x == GPIOA) ? 0 : \
+					(x == GPIOB) ? 1 : \
+					(x == GPIOC) ? 2 : \
+					(x == GPIOD) ? 3 : \
+					(x == GPIOE) ? 4 : \
+					(x == GPIOH) ? 7 : 0 )
+
+// Macros for IRQ numbers
 
 #define IRQ_NO_EXTI0		6
 #define IRQ_NO_EXTI1		7
@@ -368,7 +363,7 @@ typedef struct {
 #define IRQ_NO_EXTI9_5		23
 #define IRQ_NO_EXTI15_10	40
 
-// NOTE: Macros for NVIC priorities
+// Macros for NVIC priorities
 
 #define NVIC_IRQ_PRIO_0		0
 #define NVIC_IRQ_PRIO_1		1
