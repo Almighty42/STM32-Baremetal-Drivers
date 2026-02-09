@@ -115,6 +115,24 @@
 							} \
 						} while(0)
 
+#define VALIDATE_EN_DI(EN_or_DI, err_code)		do { \
+							if ((EN_or_DI) != ENABLE && \
+								(EN_or_DI) != DISABLE) { \
+								return (err_code); \
+							} \
+						} while (0)
+#define VALIDATE_BIT_SET(reg, bit, err_code)	do { \
+							if (!IS_BIT_SET((reg), (bit))) { \
+								return (err_code); \
+							} \
+						} while(0)
+
+#define VALIDATE_ENUM(val, max_val, err_code)	do { \
+							if ((val) > (max_val)) { \
+								return (err_code); \
+							} \
+						} while(0)
+
 // NOTE: --- Core Peripheral TypeDefs ---
 
 typedef struct

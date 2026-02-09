@@ -1,4 +1,5 @@
 #include "stm32f401xx_GPIO_driver.h"
+#include "stm32f401xx.h"
 #include <stdint.h>
 
 /********************************************************************************
@@ -24,8 +25,7 @@
 
 GPIO_status_t GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
 {
-	if (EN_or_DI != ENABLE && EN_or_DI != DISABLE)
-		return GPIO_ERROR_INVALID_STATE;
+	VALIDATE_EN_DI(EN_or_DI, GPIO_ERROR_INVALID_STATE);
 
 	GPIO_status_t status = GPIO_ERROR_INVALID_PORT;
 
@@ -95,8 +95,7 @@ GPIO_status_t GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
 
 GPIO_status_t GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 {
-	if (p_GPIO_handle == NULL)
-		return GPIO_ERROR_NULL_PTR;
+	VALIDATE_PTR(p_GPIO_handle, GPIO_ERROR_NULL_PTR);
 
 	GPIO_TypeDef* port = p_GPIO_handle->p_GPIOx;
 	if (port == NULL || (port != GPIOA && port != GPIOB && port != GPIOC &&
@@ -351,8 +350,7 @@ void GPIO_toggle_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
 
 GPIO_status_t GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 {
-	if (EN_or_DI != ENABLE && EN_or_DI != DISABLE)
-		return GPIO_ERROR_INVALID_STATE;
+	VALIDATE_EN_DI(EN_or_DI, GPIO_ERROR_INVALID_STATE);
 
 	if (irq_n >= 84)
 		return GPIO_ERROR_INVALID_IRQ;

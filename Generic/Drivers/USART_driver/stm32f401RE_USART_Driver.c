@@ -26,8 +26,7 @@
 USART_status_t USART_peri_clk_control(USART_TypeDef* p_USART_x,
                                       uint8_t EN_or_DI)
 {
-	if (EN_or_DI != ENABLE && EN_or_DI != DISABLE)
-		return USART_ERROR_INVALID_STATE;
+	VALIDATE_EN_DI(EN_or_DI, USART_ERROR_INVALID_STATE);
 
 	USART_status_t status = USART_ERROR_INVALID_PORT;
 
@@ -76,9 +75,7 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 	VALIDATE_PTR(p_USART_handle, USART_ERROR_NULL_PTR);
 
 	USART_TypeDef* port = p_USART_handle->p_USARTx;
-	if (port == NULL ||
-	    (port != USART1 && port != USART2 && port != USART6))
-		return USART_ERROR_INVALID_PORT;
+	VALIDATE_USART_PORT(port);
 
 	volatile uint32_t* cr1 = &p_USART_handle->p_USARTx->CR1;
 	volatile uint32_t* cr2 = &p_USART_handle->p_USARTx->CR2;
@@ -93,8 +90,7 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 	// Mode
 	uint8_t mode = p_USART_handle->USART_Pin_Config.USART_mode;
 
-	if (mode > USART_MODE_TXRX)
-		return USART_ERROR_INVALID_MODE;
+	VALIDATE_USART_MODE(mode);
 
 	CLEAR_FIELD_2BIT(*cr1, 2);
 	if (mode == USART_MODE_ONLY_RX) {
@@ -243,18 +239,13 @@ USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
 	VALIDATE_PTR(p_tx_buffer, USART_ERROR_NULL_PTR);
 
 	USART_TypeDef* port = p_USART_handle->p_USARTx;
-	if (port == NULL ||
-	    (port != USART1 && port != USART2 && port != USART6))
-		return USART_ERROR_INVALID_PORT;
+	VALIDATE_USART_PORT(port);
 
 	if (len == 0)
 		return USART_OK;
 
-	if (!IS_BIT_SET(p_USART_handle->p_USARTx->CR1, USART_CR1_UE))
-		return USART_ERROR_NOT_ENABLED;
-
-	if (!IS_BIT_SET(p_USART_handle->p_USARTx->CR1, USART_CR1_TE))
-		return USART_ERROR_TX_NOT_ENABLED;
+	VALIDATE_USART_ENABLED(port);
+	VALIDATE_USART_TX_ENABLED(port);
 
 	uint32_t word_len = p_USART_handle->USART_Pin_Config.USART_word_len;
 	uint32_t parity_control =
@@ -325,18 +316,13 @@ USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
 	VALIDATE_PTR(p_rx_buffer, USART_ERROR_NULL_PTR);
 
 	USART_TypeDef* port = p_USART_handle->p_USARTx;
-	if (port == NULL ||
-	    (port != USART1 && port != USART2 && port != USART6))
-		return USART_ERROR_INVALID_PORT;
+	VALIDATE_USART_PORT(port);
 
 	if (len == 0)
 		return USART_OK;
 
-	if (!IS_BIT_SET(p_USART_handle->p_USARTx->CR1, USART_CR1_UE))
-		return USART_ERROR_NOT_ENABLED;
-
-	if (!IS_BIT_SET(p_USART_handle->p_USARTx->CR1, USART_CR1_RE))
-		return USART_ERROR_RX_NOT_ENABLED;
+	VALIDATE_USART_ENABLED(port);
+	VALIDATE_USART_RX_ENABLED(port);
 
 	uint32_t word_len = p_USART_handle->USART_Pin_Config.USART_word_len;
 	uint32_t parity_control =
@@ -467,12 +453,13 @@ uint8_t USART_receive_data_it(USART_Handle_t* p_USART_handle,
 
 USART_status_t USART_peri_control(USART_TypeDef* p_USART_x, uint8_t EN_or_DI)
 {
-	if (EN_or_DI != ENABLE && EN_or_DI != DISABLE)
-		return USART_ERROR_INVALID_STATE;
+	VALIDATE_EN_DI(EN_or_DI, USART_ERROR_INVALID_STATE);
 
-	if (p_USART_x == NULL ||
-	    (p_USART_x != USART1 && p_USART_x != USART2 && p_USART_x != USART6))
-		return USART_ERROR_INVALID_PORT;
+	// if (p_USART_x == NULL ||
+	//     (p_USART_x != USART1 && p_USART_x != USART2 && p_USART_x !=
+	//     USART6))
+	// 	return USART_ERROR_INVALID_PORT;
+	VALIDATE_USART_PORT(p_USART_x);
 
 	if (EN_or_DI == ENABLE) {
 		SET_BIT(p_USART_x->CR1, USART_CR1_UE);
@@ -536,8 +523,7 @@ void USART_clear_flag(USART_TypeDef* p_USART_x, uint16_t status_flag_name)
 
 USART_status_t USART_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 {
-	if (EN_or_DI != ENABLE && EN_or_DI != DISABLE)
-		return USART_ERROR_INVALID_STATE;
+	VALIDATE_EN_DI(EN_or_DI, USART_ERROR_INVALID_STATE);
 
 	if (irq_n >= 84)
 		return USART_ERROR_INVALID_IRQ;
