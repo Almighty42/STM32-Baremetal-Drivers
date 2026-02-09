@@ -1,11 +1,12 @@
 #ifndef STM32F401RE_GPIO_DRIVER_H
 #define STM32F401RE_GPIO_DRIVER_H
 
-#include "../../stm32f401xx.h"
+#include "stm32f401xx.h"
 
 // NOTE: --- Structures for GPIO ---
 
 // Configuration structure for a GPIO pin
+
 
 typedef struct
 {
