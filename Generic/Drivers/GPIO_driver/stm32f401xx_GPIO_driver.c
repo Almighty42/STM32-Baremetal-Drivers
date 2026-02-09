@@ -4,9 +4,7 @@
 /********************************************************************************
  *
  * TODO: Future plans for this driver:
- * 1. Implement return values for configuration functions to indicate successful
- * / failed operations
- * 2. Add GPIO_lock_pin(GPIO_TypeDef *p_GPIOx, uint8_t pin_n) function
+ * 1. Add GPIO_lock_pin(GPIO_TypeDef *p_GPIOx, uint8_t pin_n) function
  *
  *******************************************************************************/
 
@@ -19,53 +17,68 @@
  * @param[*p_GPIOx]		- Base address of the GPIO peripheral
  * @param[EN_or_DI]		- ENABLE or DISABLE macros
  *
- * @return			- None
+ * @return			- Success / Failure status of the function
  *
  * @Note			- None
  *******************************************************************************/
 
-void GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
+GPIO_status_t GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
 {
-	if (EN_or_DI == ENABLE) {
-		if (p_GPIOx == GPIOA) {
+	if (EN_or_DI != ENABLE && EN_or_DI != DISABLE)
+		return GPIO_ERROR_INVALID_STATE;
+
+	GPIO_status_t status = GPIO_ERROR_INVALID_PORT;
+
+	if (p_GPIOx == GPIOA) {
+		if (EN_or_DI == ENABLE) {
 			GPIOA_PCLK_EN();
 		}
-		else if (p_GPIOx == GPIOB) {
+		else
+			GPIOA_PCLK_DI();
+		status = GPIO_OK;
+	}
+	else if (p_GPIOx == GPIOB) {
+		if (EN_or_DI == ENABLE) {
 			GPIOB_PCLK_EN();
 		}
-		else if (p_GPIOx == GPIOC) {
+		else
+			GPIOB_PCLK_DI();
+		status = GPIO_OK;
+	}
+	else if (p_GPIOx == GPIOC) {
+		if (EN_or_DI == ENABLE) {
 			GPIOC_PCLK_EN();
 		}
-		else if (p_GPIOx == GPIOD) {
+		else
+			GPIOC_PCLK_DI();
+		status = GPIO_OK;
+	}
+	else if (p_GPIOx == GPIOD) {
+		if (EN_or_DI == ENABLE) {
 			GPIOD_PCLK_EN();
 		}
-		else if (p_GPIOx == GPIOE) {
+		else
+			GPIOD_PCLK_DI();
+		status = GPIO_OK;
+	}
+	else if (p_GPIOx == GPIOE) {
+		if (EN_or_DI == ENABLE) {
 			GPIOE_PCLK_EN();
 		}
-		else if (p_GPIOx == GPIOH) {
+		else
+			GPIOE_PCLK_DI();
+		status = GPIO_OK;
+	}
+	else if (p_GPIOx == GPIOH) {
+		if (EN_or_DI == ENABLE) {
 			GPIOH_PCLK_EN();
 		}
-	}
-	else {
-		if (p_GPIOx == GPIOA) {
-			GPIOA_PCLK_DI();
-		}
-		else if (p_GPIOx == GPIOB) {
-			GPIOB_PCLK_DI();
-		}
-		else if (p_GPIOx == GPIOC) {
-			GPIOC_PCLK_DI();
-		}
-		else if (p_GPIOx == GPIOD) {
-			GPIOD_PCLK_DI();
-		}
-		else if (p_GPIOx == GPIOE) {
-			GPIOE_PCLK_DI();
-		}
-		else if (p_GPIOx == GPIOH) {
+		else
 			GPIOH_PCLK_DI();
-		}
+		status = GPIO_OK;
 	}
+
+	return status;
 }
 
 /********************************************************************************
@@ -75,29 +88,33 @@ void GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
  *
  * @param[*p_GPIO_handle]	- Handle structure of a GPIO pin
  *
- * @return			- None
+ * @return			- Success / Failure status of the function
  *
  * @Note			- None
  *******************************************************************************/
 
-void GPIO_init(GPIO_Handle_t* p_GPIO_handle)
+GPIO_status_t GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 {
-	// TODO:
-	// Validate p_GPIO_handle pointer
-	// Validate if p_GPIO_handle->p_GPIOx is pointing to the actual base
-	// address
+	if (p_GPIO_handle == NULL)
+		return GPIO_ERROR_NULL_PTR;
 
-	// uint32_t temp = 0;
-	uint32_t GPIO_pin_offset_2 =
-	    (2 * p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number);
-	uint32_t GPIO_pin_offset_1 =
-	    p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number;
+	GPIO_TypeDef* port = p_GPIO_handle->p_GPIOx;
+	if (port == NULL || port != GPIOA && port != GPIOB && port != GPIOC &&
+	                        port != GPIOD && port != GPIOE && port != GPIOH)
+		return GPIO_ERROR_INVALID_PORT;
 
 	uint32_t pin_n = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Number;
-	// TODO: Validate pin_n
+
+	if (pin_n > 15U)
+		return GPIO_ERROR_INVALID_PIN;
 
 	// Mode
 	uint8_t mode = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Mode;
+	if (mode > GPIO_MODE_IT_RFT)
+		return GPIO_ERROR_INVALID_MODE;
+
+	uint32_t GPIO_pin_offset_1 = pin_n;
+	uint32_t GPIO_pin_offset_2 = pin_n * 2U;
 
 	if (mode <= GPIO_MODE_ANALOG) {
 		// Interrupt disabled configuration routine
@@ -178,6 +195,8 @@ void GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 	// 	}
 	// 	temp = 0;
 	// }
+
+	return GPIO_OK;
 }
 
 /********************************************************************************
@@ -187,31 +206,41 @@ void GPIO_init(GPIO_Handle_t* p_GPIO_handle)
  *
  * @param[*p_GPIO_handle]	- Handle structure of a GPIO pin
  *
- * @return			- None
+ * @return			- Success / Failure status of the function
  *
  * @Note			- None
  *******************************************************************************/
 
-void GPIO_de_init(GPIO_TypeDef* p_GPIOx)
+GPIO_status_t GPIO_de_init(GPIO_TypeDef* p_GPIOx)
 {
+	GPIO_status_t status = GPIO_ERROR_INVALID_PORT;
+
 	if (p_GPIOx == GPIOA) {
 		GPIOA_REG_RESET();
+		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOB) {
 		GPIOB_REG_RESET();
+		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOC) {
 		GPIOC_REG_RESET();
+		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOD) {
 		GPIOD_REG_RESET();
+		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOE) {
 		GPIOE_REG_RESET();
+		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOH) {
 		GPIOH_REG_RESET();
+		status = GPIO_OK;
 	}
+
+	return status;
 }
 
 /********************************************************************************
@@ -256,7 +285,7 @@ uint16_t GPIO_read_input_port(GPIO_TypeDef* p_GPIOx)
  *
  * @param[*p_GPIOx]		- GPIO pin register structure
  * @param[pin_n]		- Pin number
- * @param[val]		- Value to write
+ * @param[val]			- Value to write
  *
  * @return			- None
  *
@@ -290,7 +319,7 @@ void GPIO_write_output_port(GPIO_TypeDef* p_GPIOx, uint8_t val)
 }
 
 /********************************************************************************
- * @fn			- GPIO_toggle_output_pin
+ * @fn				- GPIO_toggle_output_pin
  *
  * @brief			- Toggles GPIO output pin
  *
@@ -315,14 +344,21 @@ void GPIO_toggle_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
  * @param[irq_n]		- IRQ number
  * @param[EN_or_DI]		- ENABLE or DISABLE macros
  *
- * @return			- None
+ * @return			- Success / Failure status of the function
  *
  * @Note			- None
  *******************************************************************************/
 
-void GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
+GPIO_status_t GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 {
+	if (EN_or_DI != ENABLE && EN_or_DI != DISABLE)
+		return GPIO_ERROR_INVALID_STATE;
+
+	if (irq_n >= 84)
+		return GPIO_ERROR_INVALID_IRQ;
+
 	SYSCFG_PCLK_EN();
+
 	if (EN_or_DI == ENABLE) {
 		if (irq_n < 32)
 			SET_BIT(NVIC->ISER[0], irq_n);
@@ -339,6 +375,8 @@ void GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 		else if (irq_n >= 64 && irq_n < 96)
 			SET_BIT(NVIC->ICER[2], (irq_n % 64));
 	}
+
+	return GPIO_OK;
 }
 
 /********************************************************************************
@@ -349,29 +387,29 @@ void GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
  * @param[irq_n]		- IRQ number
  * @param[irq_prio]		- IRQ priority
  *
- * @return			- None
+ * @return			- Success / Failure status of the function
  *
  * @Note			- None
  *******************************************************************************/
 
-void GPIO_irq_priority_config(uint8_t irq_n, uint8_t irq_prio)
+GPIO_status_t GPIO_irq_priority_config(uint8_t irq_n, uint8_t irq_prio)
 {
+	if (irq_n >= 84)
+		return GPIO_ERROR_INVALID_IRQ;
+
 	// IPR_n[0-59]
 	uint8_t ipr_n = irq_n / 4;
 	// IPR_n IP_n[0-4]
 	uint8_t ipr_n_section = (irq_n % 4) * 8;
-	uint32_t prio_field = (irq_prio & ((1U << __NVIC_PRIO_BITS) - 1U))
-	                      << (8U - __NVIC_PRIO_BITS);
-
-	// __disable_irq();
-	// TODO: Implement IRQ control for this block
+	uint8_t prio_field = (irq_prio & ((1U << __NVIC_PRIO_BITS) - 1U))
+	                     << (8U - __NVIC_PRIO_BITS);
 
 	uint32_t ipr = NVIC->IPR[ipr_n];
 	CLEAR_BYTE(ipr, ipr_n_section);
 	ipr |= (prio_field << ipr_n_section);
 	NVIC->IPR[ipr_n] = ipr;
 
-	// __enable_irq();
+	return GPIO_OK;
 }
 
 /********************************************************************************

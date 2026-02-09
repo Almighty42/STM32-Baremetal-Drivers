@@ -27,10 +27,11 @@ typedef struct
 } GPIO_Handle_t;
 
 // Function return status
-// TODO: Implement the GPIO_status codes in .c file
 
 typedef enum {
 	GPIO_OK = 0,							// Success
+	GPIO_ERROR_INVALID_STATE,					// Invalid state of a argument
+	GPIO_ERROR_INVALID_IRQ,						// Invalid IRQ number
 	GPIO_ERROR_NULL_PTR,						// NULL pointer passed
 	GPIO_ERROR_INVALID_PIN,						// Pin number > 15
 	GPIO_ERROR_INVALID_PORT,					// Invalid GPIO port address
@@ -87,11 +88,11 @@ typedef enum {
 // NOTE: --- APIs supported by this driver ---
 
 // Peripheral clock setup
-void GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI);
+GPIO_status_t GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI);
 
 // Init / de-init
-void GPIO_init(GPIO_Handle_t* p_GPIO_handle);
-void GPIO_de_init(GPIO_TypeDef* p_GPIOx);
+GPIO_status_t GPIO_init(GPIO_Handle_t* p_GPIO_handle);
+GPIO_status_t GPIO_de_init(GPIO_TypeDef* p_GPIOx);
 
 // Data read/write
 uint8_t GPIO_read_input_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n);
@@ -101,8 +102,8 @@ void GPIO_write_output_port(GPIO_TypeDef* p_GPIOx, uint8_t val);
 void GPIO_toggle_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n);
 
 // IRQ configuration and ISR handling
-void GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);
-void GPIO_irq_priority_config(uint8_t irq_n, uint8_t irq_prio);
+GPIO_status_t GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);
+GPIO_status_t GPIO_irq_priority_config(uint8_t irq_n, uint8_t irq_prio);
 void GPIO_irq_handling(uint8_t pin_n);
 
 #endif
