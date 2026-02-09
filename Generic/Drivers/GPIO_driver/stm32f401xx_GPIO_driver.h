@@ -31,11 +31,12 @@ typedef struct
 typedef enum {
 	GPIO_OK = 0,							// Success
 	GPIO_ERROR_INVALID_STATE,					// Invalid state of a argument
-	GPIO_ERROR_INVALID_IRQ,						// Invalid IRQ number
 	GPIO_ERROR_NULL_PTR,						// NULL pointer passed
 	GPIO_ERROR_INVALID_PIN,						// Pin number > 15
 	GPIO_ERROR_INVALID_PORT,					// Invalid GPIO port address
-	GPIO_ERROR_INVALID_MODE						// Mode value out of range
+	GPIO_ERROR_INVALID_MODE,					// Mode value out of range
+	GPIO_ERROR_INVALID_IRQ,						// Invalid IRQ number
+	GPIO_ERROR_LOCK_FAILED,						// Failed to lock GPIO configuration
 } GPIO_status_t;
 
 // NOTE: --- @GPIO_PIN_NUMBERS ---
@@ -105,5 +106,8 @@ void GPIO_toggle_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n);
 GPIO_status_t GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);
 GPIO_status_t GPIO_irq_priority_config(uint8_t irq_n, uint8_t irq_prio);
 void GPIO_irq_handling(uint8_t pin_n);
+
+// Locks GPIO configuration of a port 
+GPIO_status_t GPIO_lock_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n);
 
 #endif

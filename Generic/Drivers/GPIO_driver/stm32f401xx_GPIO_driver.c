@@ -4,7 +4,7 @@
 /********************************************************************************
  *
  * TODO: Future plans for this driver:
- * 1. Add GPIO_lock_pin(GPIO_TypeDef *p_GPIOx, uint8_t pin_n) function
+ * Nothing so far
  *
  *******************************************************************************/
 
@@ -428,4 +428,42 @@ void GPIO_irq_handling(uint8_t pin_n)
 {
 	if (IS_BIT_SET(EXTI->PR, pin_n))
 		SET_BIT(EXTI->PR, pin_n);
+}
+
+/********************************************************************************
+ * @fn				- GPIO_lock_pin
+ *
+ * @brief			- Locks GPIO configuration of a port
+ *
+ * @param[*p_GPIOx]		- Base address of the GPIO peripheral
+ * @param[pin_n]		- Pin number
+ *
+ * @return			- Success / Failure status of the function
+ *
+ * @Note			- None
+ *******************************************************************************/
+
+GPIO_status_t GPIO_lock_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
+{
+	if (p_GPIOx == NULL || p_GPIOx != GPIOA && p_GPIOx != GPIOB &&
+	                           p_GPIOx != GPIOC && p_GPIOx != GPIOD &&
+	                           p_GPIOx != GPIOE && p_GPIOx != GPIOH)
+		return GPIO_ERROR_INVALID_PORT;
+
+	if (pin_n > 15U)
+		return GPIO_ERROR_INVALID_PIN;
+
+	SET_BIT(p_GPIOx->LCKR, pin_n);
+	SET_BIT(p_GPIOx->LCKR, 16);
+
+	CLEAR_BIT(p_GPIOx->LCKR, 16);
+
+	SET_BIT(p_GPIOx->LCKR, 16);
+
+	(void)p_GPIOx->LCKR;
+
+	if (!IS_BIT_SET(p_GPIOx->LCKR, 16))
+		return GPIO_ERROR_LOCK_FAILED;
+
+	return GPIO_OK;
 }
