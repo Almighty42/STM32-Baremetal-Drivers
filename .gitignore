@@ -1,4 +1,9 @@
 Generic/*.pdf
 Generic/PDFs/*.pdf
 Generic/*.svd
+Generic/.clangd
 Other/
+
+Button_blink/.clangd
+Button_blink/compile_flags.txt
+Button_blink/*.o

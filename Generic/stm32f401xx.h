@@ -92,10 +92,6 @@
 #define USART_PIN_SET			SET
 #define USART_PIN_RESET			RESET
 
-#define SET_BIT(reg, bit)		((reg) |= (1UL << (bit)))
-#define SET_BITS_BY_VAR(reg, val)	((reg) |= (val))
-#define TOGGLE_BIT(reg, bit)		((reg) ^= (1UL << (bit)))
-
 #define READ_BIT(reg, bit)		((reg) & (1UL << (bit)))
 #define IS_BIT_SET(reg, bit)		(READ_BIT(reg, bit) != 0UL)
 
@@ -103,6 +99,21 @@
 #define CLEAR_FIELD_2BIT(reg, pos)	((reg) &= ~(3U << (pos)))
 #define CLEAR_FIELD_4BIT(reg, pos)	((reg) &= ~(0xF << (pos)))
 #define CLEAR_BYTE(reg, pos)		((reg) &= ~(0xFF << (pos)))
+
+#define SET_BIT(reg, bit)		((reg) |= (1UL << (bit)))
+#define SET_BITS_BY_VAR(reg, val)	((reg) |= (val))
+#define SET_BYTE(reg, byte_pos, val)	do { CLEAR_BYTE((reg), (byte_pos)); \
+						(reg) |= (((uint32_t)(val) & 0xFFU) << (byte_pos)); \
+					} while(0)
+#define TOGGLE_BIT(reg, bit)		((reg) ^= (1UL << (bit)))
+
+// NOTE: --- Validation macros ---
+
+#define VALIDATE_PTR(ptr, err_code)		do { \
+							if ((ptr) == NULL) { \
+								return (err_code); \
+							} \
+						} while(0)
 
 // NOTE: --- Core Peripheral TypeDefs ---
 

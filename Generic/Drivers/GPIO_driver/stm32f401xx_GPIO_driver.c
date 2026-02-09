@@ -9,7 +9,7 @@
  *******************************************************************************/
 
 /********************************************************************************
- * @fn			- GPIO_peri_clk_control
+ * @fn				- GPIO_peri_clk_control
  *
  * @brief			- Enables or disables peripheral clock for a
  * given GPIO port
@@ -82,7 +82,7 @@ GPIO_status_t GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
 }
 
 /********************************************************************************
- * @fn			- GPIO_init
+ * @fn				- GPIO_init
  *
  * @brief			- Initializes a GPIO pin
  *
@@ -200,7 +200,7 @@ GPIO_status_t GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 }
 
 /********************************************************************************
- * @fn			- GPIO_deinit
+ * @fn				- GPIO_deinit
  *
  * @brief			- Resets a GPIO pin
  *
@@ -244,7 +244,7 @@ GPIO_status_t GPIO_de_init(GPIO_TypeDef* p_GPIOx)
 }
 
 /********************************************************************************
- * @fn			- GPIO_read_input_pin
+ * @fn				- GPIO_read_input_pin
  *
  * @brief			- Returns value of a GPIO input pin
  *
@@ -262,7 +262,7 @@ uint8_t GPIO_read_input_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
 }
 
 /********************************************************************************
- * @fn			- GPIO_read_input_port
+ * @fn				- GPIO_read_input_port
  *
  * @brief			- Returns value of a GPIO input port
  *
@@ -279,7 +279,7 @@ uint16_t GPIO_read_input_port(GPIO_TypeDef* p_GPIOx)
 }
 
 /********************************************************************************
- * @fn			- GPIO_write_output_pin
+ * @fn				- GPIO_write_output_pin
  *
  * @brief			- Writes to a GPIO output pin
  *
@@ -301,12 +301,12 @@ void GPIO_write_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n, uint8_t val)
 }
 
 /********************************************************************************
- * @fn			- GPIO_write_output_port
+ * @fn				- GPIO_write_output_port
  *
  * @brief			- Writes to a GPIO output port
  *
  * @param[*p_GPIOx]		- GPIO pin register structure
- * @param[val]		- Value to write
+ * @param[val]			- Value to write
  *
  * @return			- None
  *
@@ -337,7 +337,7 @@ void GPIO_toggle_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
 }
 
 /********************************************************************************
- * @fn			- GPIO_irq_interrupt_config
+ * @fn				- GPIO_irq_interrupt_config
  *
  * @brief			- Configures GPIO IRQ interrupt
  *
@@ -380,7 +380,7 @@ GPIO_status_t GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 }
 
 /********************************************************************************
- * @fn			- GPIO_irq_priority_config
+ * @fn				- GPIO_irq_priority_config
  *
  * @brief			- Configures GPIO IRQ priority
  *
@@ -413,7 +413,7 @@ GPIO_status_t GPIO_irq_priority_config(uint8_t irq_n, uint8_t irq_prio)
 }
 
 /********************************************************************************
- * @fn			- GPIO_irq_handling
+ * @fn				- GPIO_irq_handling
  *
  * @brief			- Handles GPIO EXTI interrupts
  *
