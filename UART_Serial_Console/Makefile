@@ -1,12 +1,17 @@
-CC = arm-none-eabi-gcc
-ARC = cortex-m4
+CC   = arm-none-eabi-gcc
+ARC  = cortex-m4
 
-CFLAGS = -mcpu=$(ARC) -mthumb -mfloat-abi=soft -std=gnu11 -Wall -O0
-LDFLAGS = -nostartfiles -nodefaultlibs -mcpu=$(ARC) -mthumb -mfloat-abi=soft -T stm32_ls.ld -Wl,-Map=blink.map
-DBFLAGS = -g3
+INCLUDES = -Icore/inc -Idrivers/GPIO -Idrivers/USART
+CFLAGS   = -mcpu=$(ARC) -mthumb -mfloat-abi=soft -std=gnu11 -Wall -O0 $(INCLUDES)
+LDFLAGS  = -nostartfiles -nodefaultlibs -mcpu=$(ARC) -mthumb -mfloat-abi=soft -T stm32_ls.ld -Wl,-Map=blink.map
+DBFLAGS  = -g3
 
-TARGET = blink.elf
-SOURCES = main.c startup.c
+TARGET  = blink.elf
+SOURCES = \
+    core/src/main.c \
+    core/src/startup.c \
+    drivers/GPIO/stm32f401xx_GPIO_driver.c
+    drivers/USART/stm32f401xx_USART_driver.c
 OBJECTS = $(SOURCES:.c=.o)
 
 $(TARGET): $(OBJECTS)
@@ -18,7 +23,7 @@ $(TARGET): $(OBJECTS)
 %.o: %.s
 	$(CC) $(CFLAGS) -c $< -o $@
 
-build: $(TARGET)  
+build: $(TARGET)
 	rm -f $(OBJECTS) *.map
 
 build_debug:
@@ -32,6 +37,6 @@ clean:
 load:
 	-pkill -x openocd || true && openocd -f interface/stlink.cfg -f target/stm32f4x.cfg
 
-flash: 
+flash:
 	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg \
 		-c "program $(TARGET) verify reset exit"

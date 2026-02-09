@@ -7,7 +7,6 @@
 
 // Configuration structure for a GPIO pin
 
-
 typedef struct
 {
 	uint8_t GPIO_Pin_Number;					// Possible values from @GPIO_PIN_NUMBERS

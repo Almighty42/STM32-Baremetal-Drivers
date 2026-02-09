@@ -4,5 +4,4 @@ arm-none-eabi
 -mthumb
 -I./core/inc
 -I./drivers/GPIO
--I./drivers/USART
 -std=gnu11
