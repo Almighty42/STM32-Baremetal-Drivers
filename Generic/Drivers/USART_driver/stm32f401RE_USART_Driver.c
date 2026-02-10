@@ -108,8 +108,7 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 	// Number of stop bits
 	uint8_t stop_bits = p_USART_handle->USART_Pin_Config.USART_n_stop_bits;
 
-	if (stop_bits > USART_STOPBITS_1_5)
-		return USART_ERROR_INVALID_STOP_BITS;
+	VALIDATE_USART_STOP_BITS(stop_bits);
 
 	CLEAR_FIELD_2BIT(*cr2, 12);
 	if (stop_bits == USART_STOPBITS_0_5) {
@@ -128,8 +127,7 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 	// Word length
 	uint8_t word_len = p_USART_handle->USART_Pin_Config.USART_word_len;
 
-	if (word_len > USART_WORDLEN_9BITS)
-		return USART_ERROR_INVALID_WORD_LENGTH;
+	VALIDATE_USART_WORD_LEN(word_len);
 
 	CLEAR_BIT(*cr1, 12);
 	if (word_len == USART_WORDLEN_8BITS) {
@@ -143,8 +141,7 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 	uint8_t parity_control =
 	    p_USART_handle->USART_Pin_Config.USART_parity_control;
 
-	if (parity_control > USART_PARITY_EN_ODD)
-		return USART_ERROR_INVALID_PARITY_CONTROL;
+	VALIDATE_USART_PARITY(parity_control);
 
 	CLEAR_BIT(*cr1, 10);
 	if (parity_control == USART_PARITY_DISABLE) {
@@ -163,8 +160,7 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 	uint8_t hw_flow_control =
 	    p_USART_handle->USART_Pin_Config.USART_hw_flow_control;
 
-	if (hw_flow_control > USART_HW_FLOW_CTRL_CTS_RTS)
-		return USART_ERROR_INVALID_HARDWARE_FLOW;
+	VALIDATE_USART_HW_FLOW(hw_flow_control);
 
 	CLEAR_FIELD_2BIT(*cr3, 8);
 	if (hw_flow_control == USART_HW_FLOW_CTRL_NONE) {
@@ -292,8 +288,6 @@ USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
 	return USART_OK;
 }
 
-// TODO: Explain to myself
-//
 /********************************************************************************
  * @fn				- USART_receive_data
  *
@@ -311,7 +305,6 @@ USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
 USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
                                   uint8_t* p_rx_buffer, uint32_t len)
 {
-
 	VALIDATE_PTR(p_USART_handle, USART_ERROR_NULL_PTR);
 	VALIDATE_PTR(p_rx_buffer, USART_ERROR_NULL_PTR);
 
@@ -330,7 +323,6 @@ USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
 	volatile uint32_t* dr = &p_USART_handle->p_USARTx->DR;
 
 	for (uint32_t i = 0; i < len; i++) {
-
 		uint32_t timeout = 100000;
 
 		while (!(USART_get_flag_status(p_USART_handle->p_USARTx,
@@ -367,8 +359,6 @@ USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
 	return USART_OK;
 }
 
-// TODO: Explain to myself
-//
 /********************************************************************************
  * @fn				- USART_send_data_it
  *
@@ -378,14 +368,24 @@ USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
  * @param[*p_tx_buffer]		- Transmission buffer ( pointer )
  * @param[len]			- Number of bytes to send
  *
- * @return			- Tx state
+ * @return			- Success / Failure status of the function
  *
  * @Note			- None
  *******************************************************************************/
 
-uint8_t USART_send_data_it(USART_Handle_t* p_USART_handle, uint8_t* p_tx_buffer,
-                           uint32_t len)
+USART_status_t USART_send_data_it(USART_Handle_t* p_USART_handle,
+                                  uint8_t* p_tx_buffer, uint32_t len)
 {
+	VALIDATE_PTR(p_USART_handle, USART_ERROR_NULL_PTR);
+	VALIDATE_PTR(p_tx_buffer, USART_ERROR_NULL_PTR);
+
+	VALIDATE_USART_PORT(p_USART_handle->p_USARTx);
+	VALIDATE_USART_ENABLED(p_USART_handle->p_USARTx);
+	VALIDATE_USART_TX_ENABLED(p_USART_handle->p_USARTx);
+
+	if (len == 0U)
+		return USART_OK;
+
 	uint8_t tx_state = p_USART_handle->tx_busy_state;
 
 	if (tx_state != USART_BUSY_IN_TX) {
@@ -399,12 +399,12 @@ uint8_t USART_send_data_it(USART_Handle_t* p_USART_handle, uint8_t* p_tx_buffer,
 		// Enabling interrupt for TC
 		SET_BIT(p_USART_handle->p_USARTx->CR1, USART_CR1_TCIE);
 	}
+	else
+		return USART_BUSY;
 
-	return tx_state;
+	return USART_OK;
 }
 
-// TODO: Explain to myself
-//
 /********************************************************************************
  * @fn				- USART_receive_data_it
  *
@@ -414,14 +414,24 @@ uint8_t USART_send_data_it(USART_Handle_t* p_USART_handle, uint8_t* p_tx_buffer,
  * @param[*p_rx_buffer]		- Receive buffer ( pointer )
  * @param[len]			- Number of bytes to receive
  *
- * @return			- Rx state
+ * @return			- Success / Failure status of the function
  *
  * @Note			- None
  *******************************************************************************/
 
-uint8_t USART_receive_data_it(USART_Handle_t* p_USART_handle,
-                              uint8_t* p_rx_buffer, uint32_t len)
+USART_status_t USART_receive_data_it(USART_Handle_t* p_USART_handle,
+                                     uint8_t* p_rx_buffer, uint32_t len)
 {
+	VALIDATE_PTR(p_USART_handle, USART_ERROR_NULL_PTR);
+	VALIDATE_PTR(p_rx_buffer, USART_ERROR_NULL_PTR);
+
+	VALIDATE_USART_PORT(p_USART_handle->p_USARTx);
+	VALIDATE_USART_ENABLED(p_USART_handle->p_USARTx);
+	VALIDATE_USART_RX_ENABLED(p_USART_handle->p_USARTx);
+
+	if (len == 0U)
+		return USART_OK;
+
 	uint8_t rx_state = p_USART_handle->rx_busy_state;
 
 	if (rx_state != USART_BUSY_IN_RX) {
@@ -433,11 +443,9 @@ uint8_t USART_receive_data_it(USART_Handle_t* p_USART_handle,
 		SET_BIT(p_USART_handle->p_USARTx->CR1, USART_CR1_RXNEIE);
 	}
 
-	return rx_state;
+	return USART_OK;
 }
 
-// TODO: Explain to myself
-//
 /********************************************************************************
  * @fn				- USART_peri_control
  *
@@ -455,10 +463,6 @@ USART_status_t USART_peri_control(USART_TypeDef* p_USART_x, uint8_t EN_or_DI)
 {
 	VALIDATE_EN_DI(EN_or_DI, USART_ERROR_INVALID_STATE);
 
-	// if (p_USART_x == NULL ||
-	//     (p_USART_x != USART1 && p_USART_x != USART2 && p_USART_x !=
-	//     USART6))
-	// 	return USART_ERROR_INVALID_PORT;
 	VALIDATE_USART_PORT(p_USART_x);
 
 	if (EN_or_DI == ENABLE) {
@@ -525,8 +529,7 @@ USART_status_t USART_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 {
 	VALIDATE_EN_DI(EN_or_DI, USART_ERROR_INVALID_STATE);
 
-	if (irq_n >= 84)
-		return USART_ERROR_INVALID_IRQ;
+	VALIDATE_IRQ_NUMBER(irq_n, USART_ERROR_INVALID_IRQ);
 
 	if (EN_or_DI == ENABLE) {
 		if (irq_n < 32)
@@ -563,8 +566,7 @@ USART_status_t USART_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 
 USART_status_t USART_irq_priority_config(uint8_t irq_n, uint32_t irq_prio)
 {
-	if (irq_n >= 84)
-		return USART_ERROR_INVALID_IRQ;
+	VALIDATE_IRQ_NUMBER(irq_n, USART_ERROR_INVALID_IRQ);
 
 	uint8_t ipr_x = irq_n / 4;
 	uint8_t ipr_x_section = (irq_n % 4) * 8;
@@ -594,25 +596,28 @@ USART_status_t USART_irq_priority_config(uint8_t irq_n, uint32_t irq_prio)
 
 void USART_irq_handling(USART_Handle_t* p_USART_handle)
 {
+	volatile uint32_t* cr1 = &p_USART_handle->p_USARTx->CR1;
+	volatile uint32_t* sr = &p_USART_handle->p_USARTx->SR;
+	volatile uint32_t* dr = &p_USART_handle->p_USARTx->SR;
+
 	uint16_t* p_data;
 	// Check state of TC bit in SR
-	uint32_t tc_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->SR, USART_SR_TC);
+	uint32_t tc_state = IS_BIT_SET(*sr, USART_SR_TC);
 	// Check state of TCEIE bit
-	uint32_t tceie_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->CR1, USART_CR1_TCIE);
+	uint32_t tceie_state = IS_BIT_SET(*cr1, USART_CR1_TCIE);
 
 	if (tc_state && tceie_state) {
 		// TC caused interrupt
 
+		uint8_t tx_busy_state = p_USART_handle->tx_busy_state;
+		uint32_t tx_len = p_USART_handle->tx_len;
+
 		// Closing transmission and calling application callback if
 		// tx_len is 0
-		if (p_USART_handle->tx_busy_state == USART_BUSY_IN_TX) {
-			if (!p_USART_handle->tx_len) {
-				CLEAR_BIT(p_USART_handle->p_USARTx->SR,
-				          USART_SR_TC);
-				CLEAR_BIT(p_USART_handle->p_USARTx->SR,
-				          USART_CR1_TCIE);
+		if (tx_busy_state == USART_BUSY_IN_TX) {
+			if (!tx_len) {
+				CLEAR_BIT(*sr, USART_SR_TC);
+				CLEAR_BIT(*cr1, USART_CR1_TCIE);
 				p_USART_handle->tx_busy_state = USART_READY;
 				p_USART_handle->p_tx_buffer = NULL;
 				p_USART_handle->tx_len = 0;
@@ -623,25 +628,26 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 	}
 
 	// Check for TXE flag
-	uint32_t txe_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->SR, USART_SR_TXE);
+	uint32_t txe_state = IS_BIT_SET(*sr, USART_SR_TXE);
 
 	// Check for TXEIE flag
-	uint32_t txeie_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->CR1, USART_CR1_TXEIE);
+	uint32_t txeie_state = IS_BIT_SET(*cr1, USART_CR1_TXEIE);
 
 	if (txe_state && txeie_state) {
 		// TXE caused interrupt
-		if (p_USART_handle->tx_busy_state == USART_BUSY_IN_TX) {
-			if (p_USART_handle->tx_len > 0) {
-				if (p_USART_handle->USART_Pin_Config
-				        .USART_word_len ==
-				    USART_WORDLEN_9BITS) {
+
+		uint8_t tx_busy_state = p_USART_handle->tx_busy_state;
+		uint32_t tx_len = p_USART_handle->tx_len;
+		uint8_t word_len =
+		    p_USART_handle->USART_Pin_Config.USART_word_len;
+
+		if (tx_busy_state == USART_BUSY_IN_TX) {
+			if (tx_len > 0) {
+				if (word_len == USART_WORDLEN_9BITS) {
 					p_data =
 					    (uint16_t*)
 					        p_USART_handle->p_tx_buffer;
-					p_USART_handle->p_USARTx->DR =
-					    (*p_data & (uint16_t)0x01FF);
+					*dr = (*p_data & (uint16_t)0x01FF);
 					if (p_USART_handle->USART_Pin_Config
 					        .USART_parity_control ==
 					    USART_PARITY_DISABLE) {

@@ -54,9 +54,10 @@ typedef enum {
 	USART_ERROR_INVALID_PARITY_CONTROL,				// Parity control out of range
 	USART_ERROR_INVALID_HARDWARE_FLOW,				// Hardware flow control out of range
 	USART_ERROR_NOT_ENABLED,					// USART not enabled, but has to be
-	USART_ERROR_TX_NOT_ENABLED,					// TX not enabled, but has to be
-	USART_ERROR_RX_NOT_ENABLED,					// RX not enabled, but has to be
-	USART_ERROR_TIMEOUT						// USART polling timeout
+	USART_ERROR_TX_NOT_ENABLED,					// Tx not enabled, but has to be
+	USART_ERROR_RX_NOT_ENABLED,					// Rx not enabled, but has to be
+	USART_ERROR_TIMEOUT,						// USART polling timeout
+	USART_BUSY							// USART Tx / Rx busy
 } USART_status_t;
 
 // USAGE: --- @USART_MODE ---
@@ -233,8 +234,8 @@ USART_status_t USART_de_init(USART_TypeDef* p_USART_x);
 // Data send / receive
 USART_status_t USART_send_data(USART_Handle_t* p_USART_handle, uint8_t* p_tx_buffer, uint32_t len);
 USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle, uint8_t* p_rx_buffer, uint32_t len);
-uint8_t USART_send_data_it(USART_Handle_t *p_USART_handle,uint8_t *p_tx_buffer, uint32_t len);
-uint8_t USART_receive_data_it(USART_Handle_t *p_USART_handle, uint8_t *p_rx_buffer, uint32_t len);
+USART_status_t USART_send_data_it(USART_Handle_t *p_USART_handle,uint8_t *p_tx_buffer, uint32_t len);
+USART_status_t USART_receive_data_it(USART_Handle_t *p_USART_handle, uint8_t *p_rx_buffer, uint32_t len);
 
 // Peripheral control API
 USART_status_t USART_peri_control(USART_TypeDef* p_USART_x, uint8_t EN_or_DI);

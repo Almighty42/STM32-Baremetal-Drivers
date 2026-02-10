@@ -109,6 +109,12 @@
 
 // NOTE: --- Validation macros ---
 
+#define VALIDATE_RANGE(val, min, max, err_code)	do { \
+							if ((val) < (min) || (val) > (max)) { \
+								return (err_code); \
+							} \
+						} while(0)
+
 #define VALIDATE_PTR(ptr, err_code)		do { \
 							if ((ptr) == NULL) { \
 								return (err_code); \
@@ -132,6 +138,8 @@
 								return (err_code); \
 							} \
 						} while(0)
+
+#define VALIDATE_IRQ_NUMBER(irq, err_code)	VALIDATE_RANGE((irq), 0U, 83U, err_code)
 
 // NOTE: --- Core Peripheral TypeDefs ---
 
