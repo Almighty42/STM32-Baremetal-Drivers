@@ -17,7 +17,7 @@ typedef struct {
 } USART_Pin_Config_t;
 
 // Handle structure for a GPIO pin
-
+// NOTE: Does NOT support DMA
 typedef struct {
 	USART_TypeDef *p_USARTx;					// Holds the base address of the USART peripheral 
 	USART_Pin_Config_t USART_Pin_Config;				// Holds USART peripheral configuration settings
@@ -223,6 +223,11 @@ typedef enum {
 #define VALIDATE_USART_RX_ENABLED(port)		VALIDATE_BIT_SET((port)->CR1, USART_CR1_RE, USART_ERROR_RX_NOT_ENABLED)
 
 // NOTE: --- APIs supported by this driver ---
+
+// WARNING: For 8-bit word length ( USART_WORDLEN_8BITS ), p_tx_buffer / p_rx_buffer may be byte aligned
+// For 9-bit word length ( USART_WORDLEN_9BITS ), this driver treats the buffer as a array of uint16_t when parity
+// is disabled. The application MUST ensure that p_tx_buffer / p_rx_buffer are 16-bit aligned and that the length
+// passed corresponds to the number of BYTES, not words.
 
 // Peripheral clock setup
 USART_status_t USART_peri_clk_control(USART_TypeDef* p_USART_x, uint8_t EN_or_DI);

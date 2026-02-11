@@ -3,10 +3,12 @@
 #include "stm32f401xx.h"
 #include <stdint.h>
 
+#define POLLING_TIMEOUT 100000
+
 /********************************************************************************
  *
  * TODO: Future plans for this driver:
- * 1.
+ * 1. Implement DMA USART in future
  *
  *******************************************************************************/
 
@@ -103,7 +105,10 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 		SET_BIT(*cr1, 2);
 		SET_BIT(*cr1, 3);
 	}
-	// TODO: Baud rate
+
+	// Baud rate
+	USART_set_baud_rate(p_USART_handle->p_USARTx,
+	                    p_USART_handle->USART_Pin_Config.USART_baud);
 
 	// Number of stop bits
 	uint8_t stop_bits = p_USART_handle->USART_Pin_Config.USART_n_stop_bits;
@@ -250,7 +255,7 @@ USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
 
 	for (uint32_t i = 0; i < len; i++) {
 
-		uint32_t timeout = 100000;
+		uint32_t timeout = POLLING_TIMEOUT;
 
 		while (!USART_get_flag_status(p_USART_handle->p_USARTx,
 		                              USART_FLAG_TXE)) {
@@ -278,7 +283,7 @@ USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
 		}
 	}
 
-	uint32_t timeout = 100000;
+	uint32_t timeout = POLLING_TIMEOUT;
 	while (
 	    !USART_get_flag_status(p_USART_handle->p_USARTx, USART_FLAG_TC)) {
 		if (--timeout == 0)
@@ -299,7 +304,10 @@ USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
  *
  * @return			- Success / Failure status of the function
  *
- * @Note			- None
+ * @Note			- Only waits for RXNE and does not check
+ * FE/NF/ORE status bits. Frames received with errors will be silently discarded
+ * by hardware. Error detection is implemented in the interrupt based function
+ * USART_irq_handling(), prefer to use USART_receive_data_it
  *******************************************************************************/
 
 USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
@@ -323,8 +331,9 @@ USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
 	volatile uint32_t* dr = &p_USART_handle->p_USARTx->DR;
 
 	for (uint32_t i = 0; i < len; i++) {
-		uint32_t timeout = 100000;
+		uint32_t timeout = POLLING_TIMEOUT;
 
+		// WARNING: Error handling done in interrupt
 		while (!(USART_get_flag_status(p_USART_handle->p_USARTx,
 		                               USART_FLAG_RXNE))) {
 			if (--timeout == 0U)
@@ -441,6 +450,7 @@ USART_status_t USART_receive_data_it(USART_Handle_t* p_USART_handle,
 
 		/* Enabling RXNE interrupt */
 		SET_BIT(p_USART_handle->p_USARTx->CR1, USART_CR1_RXNEIE);
+		SET_BIT(p_USART_handle->p_USARTx->CR3, USART_CR3_EIE);
 	}
 
 	return USART_OK;
@@ -513,6 +523,26 @@ void USART_clear_flag(USART_TypeDef* p_USART_x, uint16_t status_flag_name)
 }
 
 /********************************************************************************
+ * @fn				- USART_clear_error_flags
+ *
+ * @brief			- Clears error flags
+ *
+ * @param[*p_USART_x]		- Base address of the USART peripheral
+ *
+ * @return			- None
+ *
+ * @Note			- None
+ *******************************************************************************/
+
+static void USART_clear_error_flags(USART_TypeDef* p_USART_x)
+{
+	volatile uint32_t tmp;
+	tmp = p_USART_x->SR;
+	tmp = p_USART_x->DR;
+	(void)tmp;
+}
+
+/********************************************************************************
  * @fn				- USART_irq_interrupt_config
  *
  * @brief			- Configures USART IRQ interrupt
@@ -580,8 +610,6 @@ USART_status_t USART_irq_priority_config(uint8_t irq_n, uint32_t irq_prio)
 	return USART_OK;
 }
 
-// TODO: Explain to myself
-//
 /********************************************************************************
  * @fn				- USART_irq_handling
  *
@@ -597,8 +625,13 @@ USART_status_t USART_irq_priority_config(uint8_t irq_n, uint32_t irq_prio)
 void USART_irq_handling(USART_Handle_t* p_USART_handle)
 {
 	volatile uint32_t* cr1 = &p_USART_handle->p_USARTx->CR1;
+	volatile uint32_t* cr3 = &p_USART_handle->p_USARTx->CR3;
 	volatile uint32_t* sr = &p_USART_handle->p_USARTx->SR;
-	volatile uint32_t* dr = &p_USART_handle->p_USARTx->SR;
+	volatile uint32_t* dr = &p_USART_handle->p_USARTx->DR;
+
+	uint8_t word_len = p_USART_handle->USART_Pin_Config.USART_word_len;
+	uint8_t parity_control =
+	    p_USART_handle->USART_Pin_Config.USART_parity_control;
 
 	uint16_t* p_data;
 	// Check state of TC bit in SR
@@ -609,13 +642,10 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 	if (tc_state && tceie_state) {
 		// TC caused interrupt
 
-		uint8_t tx_busy_state = p_USART_handle->tx_busy_state;
-		uint32_t tx_len = p_USART_handle->tx_len;
-
 		// Closing transmission and calling application callback if
 		// tx_len is 0
-		if (tx_busy_state == USART_BUSY_IN_TX) {
-			if (!tx_len) {
+		if (p_USART_handle->tx_busy_state == USART_BUSY_IN_TX) {
+			if (!p_USART_handle->tx_len) {
 				CLEAR_BIT(*sr, USART_SR_TC);
 				CLEAR_BIT(*cr1, USART_CR1_TCIE);
 				p_USART_handle->tx_busy_state = USART_READY;
@@ -629,116 +659,93 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 
 	// Check for TXE flag
 	uint32_t txe_state = IS_BIT_SET(*sr, USART_SR_TXE);
-
 	// Check for TXEIE flag
 	uint32_t txeie_state = IS_BIT_SET(*cr1, USART_CR1_TXEIE);
 
 	if (txe_state && txeie_state) {
 		// TXE caused interrupt
 
-		uint8_t tx_busy_state = p_USART_handle->tx_busy_state;
-		uint32_t tx_len = p_USART_handle->tx_len;
-		uint8_t word_len =
-		    p_USART_handle->USART_Pin_Config.USART_word_len;
-
-		if (tx_busy_state == USART_BUSY_IN_TX) {
-			if (tx_len > 0) {
+		if (p_USART_handle->tx_busy_state == USART_BUSY_IN_TX) {
+			if (p_USART_handle->tx_len > 0) {
 				if (word_len == USART_WORDLEN_9BITS) {
 					p_data =
 					    (uint16_t*)
 					        p_USART_handle->p_tx_buffer;
 					*dr = (*p_data & (uint16_t)0x01FF);
-					if (p_USART_handle->USART_Pin_Config
-					        .USART_parity_control ==
+					if (parity_control ==
 					    USART_PARITY_DISABLE) {
-						p_USART_handle->p_tx_buffer++;
-						p_USART_handle->p_tx_buffer++;
+						p_USART_handle->p_tx_buffer +=
+						    2;
 						p_USART_handle->tx_len -= 2;
 					}
 					else {
 						p_USART_handle->p_tx_buffer++;
-						p_USART_handle->tx_len -= 1;
+						p_USART_handle->tx_len--;
 					}
 				}
 				else {
-					p_USART_handle->p_USARTx->DR =
-					    (*p_USART_handle->p_tx_buffer &
-					     (uint8_t)0xFF);
+					*dr = (*p_USART_handle->p_tx_buffer &
+					       (uint8_t)0xFF);
 					p_USART_handle->p_tx_buffer++;
-					p_USART_handle->tx_len -= 1;
+					p_USART_handle->tx_len--;
 				}
 			}
 			if (p_USART_handle->tx_len == 0) {
-				CLEAR_BIT(p_USART_handle->p_USARTx->CR1,
-				          USART_CR1_TXEIE);
+				CLEAR_BIT(*cr1, USART_CR1_TXEIE);
 			}
 		}
 	}
 
 	// Check for RXNE flag
-	uint32_t rxne_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->SR, USART_SR_RXNE);
+	uint32_t rxne_state = IS_BIT_SET(*sr, USART_SR_RXNE);
 	// Check for RXNEIE flag
-	uint32_t rxneie_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->CR1, USART_CR1_RXNEIE);
+	uint32_t rxneie_state = IS_BIT_SET(*cr1, USART_CR1_RXNEIE);
 
 	if (rxne_state && rxneie_state) {
 		// RXNE
+
 		if (p_USART_handle->rx_busy_state == USART_BUSY_IN_RX) {
 			if (p_USART_handle->rx_len > 0) {
-				if (p_USART_handle->USART_Pin_Config
-				        .USART_word_len ==
-				    USART_WORDLEN_9BITS) {
-					if (p_USART_handle->USART_Pin_Config
-					        .USART_parity_control ==
+				if (word_len == USART_WORDLEN_9BITS) {
+					if (parity_control ==
 					    USART_PARITY_DISABLE) {
 						*((uint16_t*)p_USART_handle
 						      ->p_rx_buffer) =
-						    (p_USART_handle->p_USARTx
-						         ->DR &
-						     (uint16_t)0x01FF);
+						    (*dr & (uint16_t)0x01FF);
 
-						p_USART_handle->p_rx_buffer++;
-						p_USART_handle->p_rx_buffer++;
+						p_USART_handle->p_rx_buffer +=
+						    2;
 						p_USART_handle->rx_len -= 2;
 					}
 					else {
 						*p_USART_handle->p_rx_buffer =
-						    (p_USART_handle->p_USARTx
-						         ->DR &
-						     (uint8_t)0xFF);
+						    (*dr & (uint8_t)0xFF);
 						p_USART_handle->p_rx_buffer++;
-						p_USART_handle->rx_len -= 1;
+						p_USART_handle->rx_len--;
 					}
 				}
 				else {
-					if (p_USART_handle->USART_Pin_Config
-					        .USART_parity_control ==
+					if (parity_control ==
 					    USART_PARITY_DISABLE) {
 						*p_USART_handle->p_rx_buffer =
-						    (uint8_t)(p_USART_handle
-						                  ->p_USARTx
-						                  ->DR &
+						    (uint8_t)(*dr &
 						              (uint8_t)0xFF);
 					}
 					else {
 						*p_USART_handle->p_rx_buffer =
-						    (uint8_t)(p_USART_handle
-						                  ->p_USARTx
-						                  ->DR &
+						    (uint8_t)(*dr &
 						              (uint8_t)0x7F);
 					}
 
 					/* Incrementing the pRxBuffer */
 					p_USART_handle->p_rx_buffer++;
-					p_USART_handle->rx_len -= 1;
+					p_USART_handle->rx_len--;
 				}
 			}
 
 			if (!p_USART_handle->rx_len) {
 				/* Disabling the RXNE */
-				p_USART_handle->p_USARTx->CR1 &=
-				    ~(1 << USART_CR1_RXNEIE);
+				CLEAR_BIT(*cr1, USART_CR1_RXNEIE);
 				p_USART_handle->rx_busy_state = USART_READY;
 				USART_application_event_callback(
 				    p_USART_handle, USART_EVENT_RX_CMPLT);
@@ -747,56 +754,50 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 	}
 
 	// Check for CTS flag
-	uint32_t cts_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->SR, USART_SR_CTS);
+	uint32_t cts_state = IS_BIT_SET(*sr, USART_SR_CTS);
 	// Check for CTSE flag
-	uint32_t ctse_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->CR3, USART_CR3_CTSE);
+	uint32_t ctse_state = IS_BIT_SET(*cr3, USART_CR3_CTSE);
 	// Check for CTSIE flag
-	uint32_t ctsie_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->CR3, USART_CR3_CTSIE);
+	uint32_t ctsie_state = IS_BIT_SET(*cr3, USART_CR3_CTSIE);
 
 	if (cts_state && ctse_state && ctsie_state) {
 		// Clearing CTS flag
-		CLEAR_BIT(p_USART_handle->p_USARTx->SR, USART_SR_CTS);
+		CLEAR_BIT(*sr, USART_SR_CTS);
 		// CTS caused interrupt
 		USART_application_event_callback(p_USART_handle,
 		                                 USART_EVENT_CTS);
 	}
 
 	// Check for IDLE flag
-	uint32_t idle_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->SR, USART_SR_IDLE);
+	uint32_t idle_state = IS_BIT_SET(*sr, USART_SR_IDLE);
 	// Check for IDLEIE flag
-	uint32_t idleie_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->CR1, USART_CR1_IDLEIE);
+	uint32_t idleie_state = IS_BIT_SET(*cr1, USART_CR1_IDLEIE);
 
 	if (idle_state && idleie_state) {
-		CLEAR_BIT(p_USART_handle->p_USARTx->SR, USART_SR_IDLE);
+		CLEAR_BIT(*sr, USART_SR_IDLE);
 		// IDLE caused interrupt
 		USART_application_event_callback(p_USART_handle,
 		                                 USART_EVENT_IDLE);
 	}
 
 	// Check for ORE flag
-	uint32_t ore_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->SR, USART_SR_ORE);
+	// uint32_t ore_state = IS_BIT_SET(*sr, USART_SR_ORE);
 	// Check for RXNEIE
-	rxneie_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->CR1, USART_CR1_RXNEIE);
+	// rxneie_state = IS_BIT_SET(*cr1, USART_CR1_RXNEIE);
 
-	if (ore_state && rxneie_state) {
-		// Need not to clear the ORE flag here, instead give an api for
-		// the application to clear the ORE flag .
-		USART_application_event_callback(p_USART_handle, USART_ERR_ORE);
-	}
+	// if (ore_state && rxneie_state) {
+	// 	// Need not to clear the ORE flag here, instead give an api for
+	// 	// the application to clear the ORE flag .
+	// 	USART_application_event_callback(p_USART_handle, USART_ERR_ORE);
+	// }
 
 	// Check for error flag
-	uint32_t eie_state =
-	    IS_BIT_SET(p_USART_handle->p_USARTx->CR3, USART_CR3_EIE);
+	uint32_t eie_state = IS_BIT_SET(*cr3, USART_CR3_EIE);
 
 	if (eie_state) {
-		if (p_USART_handle->p_USARTx->SR & (1 << USART_SR_FE)) {
+		uint32_t sr_val = *sr;
+
+		if (sr_val & USART_SR_FE) {
 			/*
 			                    This bit is set by hardware when a
 			   de-synchronization, excessive noise or a break
@@ -808,7 +809,7 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 			                                 USART_ERR_FE);
 		}
 
-		if (p_USART_handle->p_USARTx->SR & (1 << USART_SR_NF)) {
+		if (sr_val & USART_SR_NF) {
 			/*
 			                    This bit is set by hardware when
 			   noise is detected on a received frame. It is cleared
@@ -820,9 +821,16 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 			                                 USART_ERR_NE);
 		}
 
-		if (p_USART_handle->p_USARTx->SR & (1 << USART_SR_ORE))
+		if (sr_val & USART_SR_ORE) {
 			USART_application_event_callback(p_USART_handle,
 			                                 USART_ERR_ORE);
+		}
+
+		// WARNING: This clears DR as well, which means any data that
+		// was in DR at the time of the error is lost. This isn't an
+		// issue as any data in DR is likely to be corrupted in case
+		// this part of the code is called
+		USART_clear_error_flags(p_USART_handle->p_USARTx);
 	}
 }
 
@@ -839,9 +847,8 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
  * @Note			- None
  *******************************************************************************/
 
-void USART_SetBaudRate(USART_TypeDef* p_USART_x, uint32_t baud_rate)
+void USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate)
 {
-
 	uint32_t pclk_x;
 
 	uint32_t usart_div;
@@ -890,8 +897,6 @@ void USART_SetBaudRate(USART_TypeDef* p_USART_x, uint32_t baud_rate)
 	p_USART_x->BRR = temp_reg;
 }
 
-// TODO: Explain to myself
-//
 /********************************************************************************
  * @fn				- USART_application_event_callback
  *
@@ -909,6 +914,6 @@ __attribute__((weak)) void
 USART_application_event_callback(USART_Handle_t* p_USART_handle,
                                  USART_AppEvent_t app_ev)
 {
-	/* This is a week implementation. The application may override this
-	 * function. */
+	/* This is a week implementation. The application may override
+	 * this function. */
 }
