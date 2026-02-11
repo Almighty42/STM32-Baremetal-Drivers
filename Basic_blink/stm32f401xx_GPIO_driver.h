@@ -7,7 +7,6 @@
 
 // Configuration structure for a GPIO pin
 
-
 typedef struct
 {
 	uint8_t GPIO_Pin_Number;					// Possible values from @GPIO_PIN_NUMBERS
@@ -15,7 +14,7 @@ typedef struct
 	uint8_t GPIO_Pin_Speed;						// Possible values from @GPIO_PIN_SPEED
 	uint8_t GPIO_Pin_PuPd_Control;					// Possible values from @GPIO_PIN_PUPD
 	uint8_t GPIO_Pin_OTP_Type;					// Possible values from @GPIO_PIN_TYPE
-	uint8_t GPIO_Pin_Alt_Fun_Mode;					// TODO:
+	uint8_t GPIO_Pin_Alt_Fun_Mode;					// Possible values from @GPIO_ALT_MODE
 } GPIO_Pin_Config_t;
 
 // Handle structure for a GPIO pin
@@ -39,52 +38,71 @@ typedef enum {
 	GPIO_ERROR_LOCK_FAILED,						// Failed to lock GPIO configuration
 } GPIO_status_t;
 
-// NOTE: --- @GPIO_PIN_NUMBERS ---
+// USAGE: --- @GPIO_PIN_NUMBERS ---
 
-#define GPIO_PIN_NO_0 0
-#define GPIO_PIN_NO_1 1
-#define GPIO_PIN_NO_2 2
-#define GPIO_PIN_NO_3 3
-#define GPIO_PIN_NO_4 4
-#define GPIO_PIN_NO_5 5
-#define GPIO_PIN_NO_6 6
-#define GPIO_PIN_NO_7 7
-#define GPIO_PIN_NO_8 8
-#define GPIO_PIN_NO_9 9
-#define GPIO_PIN_NO_10 10
-#define GPIO_PIN_NO_11 11
-#define GPIO_PIN_NO_12 12
-#define GPIO_PIN_NO_13 13
-#define GPIO_PIN_NO_14 14
-#define GPIO_PIN_NO_15 15
+#define GPIO_PIN_NO_0				0
+#define GPIO_PIN_NO_1				1
+#define GPIO_PIN_NO_2				2
+#define GPIO_PIN_NO_3				3
+#define GPIO_PIN_NO_4				4
+#define GPIO_PIN_NO_5				5
+#define GPIO_PIN_NO_6				6
+#define GPIO_PIN_NO_7				7
+#define GPIO_PIN_NO_8				8
+#define GPIO_PIN_NO_9				9
+#define GPIO_PIN_NO_10				10
+#define GPIO_PIN_NO_11 				11
+#define GPIO_PIN_NO_12 				12
+#define GPIO_PIN_NO_13 				13
+#define GPIO_PIN_NO_14 				14
+#define GPIO_PIN_NO_15 				15
 
-// NOTE: --- GPIO_PIN_MODES ---
+// USAGE: --- GPIO_PIN_MODES ---
 
-#define GPIO_MODE_IN 0
-#define GPIO_MODE_OUT 1
-#define GPIO_MODE_ALT 2
-#define GPIO_MODE_ANALOG 3
-#define GPIO_MODE_IT_FT 4
-#define GPIO_MODE_IT_RT 5
-#define GPIO_MODE_IT_RFT 6
+#define GPIO_MODE_IN				0
+#define GPIO_MODE_OUT				1
+#define GPIO_MODE_ALT				2
+#define GPIO_MODE_ANALOG			3
+#define GPIO_MODE_IT_FT				4
+#define GPIO_MODE_IT_RT				5
+#define GPIO_MODE_IT_RFT			6
 
-// NOTE: --- GPIO_PIN_TYPE ---
+// USAGE: --- GPIO_PIN_TYPE ---
 
-#define GPIO_OP_TYPE_PP 0
-#define GPIO_OP_TYPE_OD 1
+#define GPIO_OP_TYPE_PP				0
+#define GPIO_OP_TYPE_OD				1
 
-// NOTE: --- GPIO_PIN_SPEED ---
+// USAGE: --- GPIO_PIN_SPEED ---
 
-#define GPIO_SPEED_LOW 0
-#define GPIO_SPEED_MED 1
-#define GPIO_SPEED_FAST 2
-#define GPIO_SPEED_HIGH 3
+#define GPIO_SPEED_LOW				0
+#define GPIO_SPEED_MED				1
+#define GPIO_SPEED_FAST				2
+#define GPIO_SPEED_HIGH				3
 
-// NOTE: --- GPIO_PIN_PUPD ---
+// USAGE: --- GPIO_PIN_PUPD ---
 
-#define GPIO_NO_PUPD 0
-#define GPIO_PIN_PU 1
-#define GPIO_PIN_PD 2
+#define GPIO_NO_PUPD				0
+#define GPIO_PIN_PU				1
+#define GPIO_PIN_PD				2
+
+// USAGE: --- GPIO_ALT_MODE ---
+
+#define GPIO_ALT_MODE_AF0			0
+#define GPIO_ALT_MODE_AF1			1
+#define GPIO_ALT_MODE_AF2			2
+#define GPIO_ALT_MODE_AF3			3
+#define GPIO_ALT_MODE_AF4			4
+#define GPIO_ALT_MODE_AF5			5
+#define GPIO_ALT_MODE_AF6			6
+#define GPIO_ALT_MODE_AF7			7
+#define GPIO_ALT_MODE_AF8			8
+#define GPIO_ALT_MODE_AF9			9
+#define GPIO_ALT_MODE_AF10			10
+#define GPIO_ALT_MODE_AF11			11
+#define GPIO_ALT_MODE_AF12			12
+#define GPIO_ALT_MODE_AF13			13
+#define GPIO_ALT_MODE_AF14			14
+#define GPIO_ALT_MODE_AF15			15
 
 // NOTE: --- APIs supported by this driver ---
 
