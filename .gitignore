@@ -7,3 +7,7 @@ Other/
 Button_blink/.clangd
 Button_blink/compile_flags.txt
 Button_blink/*.o
+
+UART_Serial_Console/.clangd
+UART_Serial_Console/compile_flags.txt
+UART_Serial_Console/*.o

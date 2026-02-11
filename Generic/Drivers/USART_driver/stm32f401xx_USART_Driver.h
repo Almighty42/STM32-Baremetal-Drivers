@@ -255,4 +255,7 @@ void USART_irq_handling(USART_Handle_t *p_USART_handle);
 // Application callback
 void USART_application_event_callback(USART_Handle_t *p_USART_handle,USART_AppEvent_t app_ev);
 
+// Utils
+void USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate);
+
 #endif

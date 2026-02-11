@@ -1,6 +1,6 @@
-#include "stm32f401RE_USART_Driver.h"
-#include "Drivers/RCC_driver/stm32f401xx_RCC_driver.h"
+#include "stm32f401xx_USART_Driver.h"
 #include "stm32f401xx.h"
+#include "stm32f401xx_RCC_driver.h"
 #include <stdint.h>
 
 #define POLLING_TIMEOUT 100000
