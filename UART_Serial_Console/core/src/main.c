@@ -3,17 +3,23 @@
 // Peripheral drivers
 #include "stm32f401xx_GPIO_driver.h"
 #include "stm32f401xx_USART_driver.h"
+// Stdlib
 #include <stdint.h>
 
 // Transmitter buffer
-char* msg[3] = {"Example 1\n", "Example 2\n", "Example 3\n"};
+const uint8_t* msg[] = {(const uint8_t*)"Ex 1\n", (const uint8_t*)"Ex 2\n",
+                        (const uint8_t*)"Ex 3\n"};
 
 // Receiver buffer
 char rx_buffer[1024];
 
+// USART2 handle
+USART_Handle_t usart2;
+
 void GPIO_btn_init(void);
 void USART2_GPIO_init(void);
 void USART2_init(void);
+uint32_t strlen(const char* str);
 
 int main(void)
 {
@@ -23,7 +29,11 @@ int main(void)
 
 	USART2_init();
 
-	// USART_irq_interrupt_config()
+	USART_irq_interrupt_config(IRQ_NO_USART2, ENABLE);
+
+	USART_peri_control(USART2, ENABLE);
+
+	USART_send_data(&usart2, msg[0], strlen((char*)msg[0]));
 
 	while (1) {
 	}
@@ -67,16 +77,23 @@ void USART2_GPIO_init(void)
 
 void USART2_init(void)
 {
-	USART_Handle_t usart2 = {
-	    .p_USARTx = USART2,
-	    .USART_Pin_Config.USART_baud = USART_STD_BAUD_115200,
-	    .USART_Pin_Config.USART_hw_flow_control = USART_HW_FLOW_CTRL_NONE,
-	    .USART_Pin_Config.USART_mode = USART_MODE_TXRX,
-	    .USART_Pin_Config.USART_n_stop_bits = USART_STOPBITS_1,
-	    .USART_Pin_Config.USART_word_len = USART_WORDLEN_8BITS,
-	    .USART_Pin_Config.USART_parity_control = USART_PARITY_DISABLE,
-	};
+	usart2.p_USARTx = USART2;
+	usart2.USART_Pin_Config.USART_baud = USART_STD_BAUD_115200;
+	usart2.USART_Pin_Config.USART_hw_flow_control = USART_HW_FLOW_CTRL_NONE;
+	usart2.USART_Pin_Config.USART_mode = USART_MODE_TXRX;
+	usart2.USART_Pin_Config.USART_n_stop_bits = USART_STOPBITS_1;
+	usart2.USART_Pin_Config.USART_word_len = USART_WORDLEN_8BITS;
+	usart2.USART_Pin_Config.USART_parity_control = USART_PARITY_DISABLE;
+
 	USART_init(&usart2);
+}
+
+uint32_t strlen(const char* str)
+{
+	uint32_t len = 0;
+	while (*str++ != '\0')
+		len++;
+	return len;
 }
 
 void EXTI15_10_IRQHandler(void)

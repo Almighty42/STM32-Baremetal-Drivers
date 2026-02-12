@@ -3,10 +3,10 @@ ARC  = cortex-m4
 
 INCLUDES = -Icore/inc -Idrivers/GPIO -Idrivers/USART -Idrivers/RCC
 CFLAGS   = -mcpu=$(ARC) -mthumb -mfloat-abi=soft -std=gnu11 -Wall -O0 $(INCLUDES)
-LDFLAGS  = -nostartfiles -nodefaultlibs -mcpu=$(ARC) -mthumb -mfloat-abi=soft -T stm32_ls.ld -Wl,-Map=blink.map
+LDFLAGS  = -nostartfiles -nodefaultlibs -mcpu=$(ARC) -mthumb -mfloat-abi=soft -T stm32_ls.ld -Wl,-Map=usart.map
 DBFLAGS  = -g3
 
-TARGET  = blink.elf
+TARGET  = usart.elf
 SOURCES = \
     core/src/main.c \
     core/src/startup.c \

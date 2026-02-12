@@ -237,7 +237,7 @@ USART_status_t USART_init(USART_Handle_t *p_USART_handle);
 USART_status_t USART_de_init(USART_TypeDef* p_USART_x);
 
 // Data send / receive
-USART_status_t USART_send_data(USART_Handle_t* p_USART_handle, uint8_t* p_tx_buffer, uint32_t len);
+USART_status_t USART_send_data(USART_Handle_t* p_USART_handle, const uint8_t* p_tx_buffer, uint32_t len);
 USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle, uint8_t* p_rx_buffer, uint32_t len);
 USART_status_t USART_send_data_it(USART_Handle_t *p_USART_handle,uint8_t *p_tx_buffer, uint32_t len);
 USART_status_t USART_receive_data_it(USART_Handle_t *p_USART_handle, uint8_t *p_rx_buffer, uint32_t len);

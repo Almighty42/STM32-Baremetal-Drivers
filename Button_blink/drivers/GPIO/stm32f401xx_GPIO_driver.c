@@ -1,4 +1,5 @@
 #include "stm32f401xx_GPIO_driver.h"
+#include "stm32f401xx.h"
 #include <stdint.h>
 
 /********************************************************************************
@@ -9,7 +10,7 @@
  *******************************************************************************/
 
 /********************************************************************************
- * @fn			- GPIO_peri_clk_control
+ * @fn				- GPIO_peri_clk_control
  *
  * @brief			- Enables or disables peripheral clock for a
  * given GPIO port
@@ -24,8 +25,7 @@
 
 GPIO_status_t GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
 {
-	if (EN_or_DI != ENABLE && EN_or_DI != DISABLE)
-		return GPIO_ERROR_INVALID_STATE;
+	VALIDATE_EN_DI(EN_or_DI, GPIO_ERROR_INVALID_STATE);
 
 	GPIO_status_t status = GPIO_ERROR_INVALID_PORT;
 
@@ -82,7 +82,7 @@ GPIO_status_t GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
 }
 
 /********************************************************************************
- * @fn			- GPIO_init
+ * @fn				- GPIO_init
  *
  * @brief			- Initializes a GPIO pin
  *
@@ -95,8 +95,7 @@ GPIO_status_t GPIO_peri_clk_control(GPIO_TypeDef* p_GPIOx, uint8_t EN_or_DI)
 
 GPIO_status_t GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 {
-	if (p_GPIO_handle == NULL)
-		return GPIO_ERROR_NULL_PTR;
+	VALIDATE_PTR(p_GPIO_handle, GPIO_ERROR_NULL_PTR);
 
 	GPIO_TypeDef* port = p_GPIO_handle->p_GPIOx;
 	if (port == NULL || (port != GPIOA && port != GPIOB && port != GPIOC &&
@@ -175,32 +174,34 @@ GPIO_status_t GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 	SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->OTYPER,
 	                otp << GPIO_pin_offset_1);
 
-	// TODO: Alt func
+	if (mode == GPIO_MODE_ALT) {
+		uint32_t afr_index = (pin_n / 8);
+		uint32_t afr_shift = (pin_n % 8) * 4;
 
-	// uint8_t alt_func =
-	// p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Alt_Fun_Mode;
-	//
-	// if (alt_func == GPIO_MODE_ALT) {
-	// 	uint8_t temp_offset = pin_n % 8;
-	// 	temp = alt_func << (4 * temp_offset);
-	// 	if (pin_n / 8 == 0) {
-	// 		CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRL,
-	// 		                 temp_offset);
-	// 		SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRL, temp);
-	// 	}
-	// 	else {
-	// 		CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRH,
-	// 		                 temp_offset);
-	// 		SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRH, temp);
-	// 	}
-	// 	temp = 0;
-	// }
+		uint32_t af =
+		    (uint32_t)
+		        p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Alt_Fun_Mode &
+		    0x0FU;
+
+		if (afr_index == 0) {
+			CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRL,
+			                 afr_shift);
+			SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRL,
+			                (af << afr_shift));
+		}
+		else {
+			CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRH,
+			                 afr_shift);
+			SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRH,
+			                (af << afr_shift));
+		}
+	}
 
 	return GPIO_OK;
 }
 
 /********************************************************************************
- * @fn			- GPIO_deinit
+ * @fn				- GPIO_deinit
  *
  * @brief			- Resets a GPIO pin
  *
@@ -244,7 +245,7 @@ GPIO_status_t GPIO_de_init(GPIO_TypeDef* p_GPIOx)
 }
 
 /********************************************************************************
- * @fn			- GPIO_read_input_pin
+ * @fn				- GPIO_read_input_pin
  *
  * @brief			- Returns value of a GPIO input pin
  *
@@ -262,7 +263,7 @@ uint8_t GPIO_read_input_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
 }
 
 /********************************************************************************
- * @fn			- GPIO_read_input_port
+ * @fn				- GPIO_read_input_port
  *
  * @brief			- Returns value of a GPIO input port
  *
@@ -279,7 +280,7 @@ uint16_t GPIO_read_input_port(GPIO_TypeDef* p_GPIOx)
 }
 
 /********************************************************************************
- * @fn			- GPIO_write_output_pin
+ * @fn				- GPIO_write_output_pin
  *
  * @brief			- Writes to a GPIO output pin
  *
@@ -301,12 +302,12 @@ void GPIO_write_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n, uint8_t val)
 }
 
 /********************************************************************************
- * @fn			- GPIO_write_output_port
+ * @fn				- GPIO_write_output_port
  *
  * @brief			- Writes to a GPIO output port
  *
  * @param[*p_GPIOx]		- GPIO pin register structure
- * @param[val]		- Value to write
+ * @param[val]			- Value to write
  *
  * @return			- None
  *
@@ -337,7 +338,7 @@ void GPIO_toggle_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
 }
 
 /********************************************************************************
- * @fn			- GPIO_irq_interrupt_config
+ * @fn				- GPIO_irq_interrupt_config
  *
  * @brief			- Configures GPIO IRQ interrupt
  *
@@ -351,8 +352,7 @@ void GPIO_toggle_output_pin(GPIO_TypeDef* p_GPIOx, uint8_t pin_n)
 
 GPIO_status_t GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 {
-	if (EN_or_DI != ENABLE && EN_or_DI != DISABLE)
-		return GPIO_ERROR_INVALID_STATE;
+	VALIDATE_EN_DI(EN_or_DI, GPIO_ERROR_INVALID_STATE);
 
 	if (irq_n >= 84)
 		return GPIO_ERROR_INVALID_IRQ;
@@ -380,7 +380,7 @@ GPIO_status_t GPIO_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
 }
 
 /********************************************************************************
- * @fn			- GPIO_irq_priority_config
+ * @fn				- GPIO_irq_priority_config
  *
  * @brief			- Configures GPIO IRQ priority
  *
@@ -413,7 +413,7 @@ GPIO_status_t GPIO_irq_priority_config(uint8_t irq_n, uint8_t irq_prio)
 }
 
 /********************************************************************************
- * @fn			- GPIO_irq_handling
+ * @fn				- GPIO_irq_handling
  *
  * @brief			- Handles GPIO EXTI interrupts
  *

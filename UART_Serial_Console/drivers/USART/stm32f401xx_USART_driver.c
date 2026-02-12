@@ -232,7 +232,7 @@ USART_status_t USART_de_init(USART_TypeDef* p_USART_x)
  *******************************************************************************/
 
 USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
-                               uint8_t* p_tx_buffer, uint32_t len)
+                               const uint8_t* p_tx_buffer, uint32_t len)
 {
 	uint16_t* pdata;
 

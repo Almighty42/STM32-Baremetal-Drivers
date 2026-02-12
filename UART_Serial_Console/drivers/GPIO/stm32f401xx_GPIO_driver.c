@@ -174,26 +174,28 @@ GPIO_status_t GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 	SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->OTYPER,
 	                otp << GPIO_pin_offset_1);
 
-	// TODO: Alt func
+	if (mode == GPIO_MODE_ALT) {
+		uint32_t afr_index = (pin_n / 8);
+		uint32_t afr_shift = (pin_n % 8) * 4;
 
-	// uint8_t alt_func =
-	// p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Alt_Fun_Mode;
-	//
-	// if (alt_func == GPIO_MODE_ALT) {
-	// 	uint8_t temp_offset = pin_n % 8;
-	// 	temp = alt_func << (4 * temp_offset);
-	// 	if (pin_n / 8 == 0) {
-	// 		CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRL,
-	// 		                 temp_offset);
-	// 		SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRL, temp);
-	// 	}
-	// 	else {
-	// 		CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRH,
-	// 		                 temp_offset);
-	// 		SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRH, temp);
-	// 	}
-	// 	temp = 0;
-	// }
+		uint32_t af =
+		    (uint32_t)
+		        p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Alt_Fun_Mode &
+		    0x0FU;
+
+		if (afr_index == 0) {
+			CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRL,
+			                 afr_shift);
+			SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRL,
+			                (af << afr_shift));
+		}
+		else {
+			CLEAR_FIELD_4BIT(p_GPIO_handle->p_GPIOx->AFRH,
+			                 afr_shift);
+			SET_BITS_BY_VAR(p_GPIO_handle->p_GPIOx->AFRH,
+			                (af << afr_shift));
+		}
+	}
 
 	return GPIO_OK;
 }
