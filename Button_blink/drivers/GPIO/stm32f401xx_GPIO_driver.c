@@ -151,7 +151,7 @@ GPIO_status_t GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 		SET_BITS_BY_VAR(SYSCFG->EXTICR[exticr_n],
 		                (portcode << (exticr_offset_n * 4)));
 
-		SYSCFG->EXTICR[exticr_n] = portcode << (exticr_offset_n * 4);
+		// SYSCFG->EXTICR[exticr_n] = portcode << (exticr_offset_n * 4);
 
 		SET_BIT(EXTI->IMR, GPIO_pin_offset_1);
 	}

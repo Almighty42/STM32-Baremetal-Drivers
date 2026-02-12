@@ -7,8 +7,9 @@
 #include <stdint.h>
 
 // Transmitter buffer
-const uint8_t* msg[] = {(const uint8_t*)"Ex 1\n", (const uint8_t*)"Ex 2\n",
-                        (const uint8_t*)"Ex 3\n"};
+const uint8_t* msg[] = {(const uint8_t*)"Ex 1\r\n", (const uint8_t*)"Ex 2\r\n",
+                        (const uint8_t*)"Ex 3\r\n"};
+uint8_t msg_num = 0;
 
 // Receiver buffer
 char rx_buffer[1024];
@@ -33,8 +34,6 @@ int main(void)
 
 	USART_peri_control(USART2, ENABLE);
 
-	USART_send_data(&usart2, msg[0], strlen((char*)msg[0]));
-
 	while (1) {
 	}
 }
@@ -57,6 +56,8 @@ void GPIO_btn_init(void)
 
 void USART2_GPIO_init(void)
 {
+	GPIO_peri_clk_control(GPIOA, ENABLE);
+
 	GPIO_Handle_t p_usart2_gpio = {
 	    .p_GPIOx = GPIOA,
 	    .GPIO_Pin_Config.GPIO_Pin_Mode = GPIO_MODE_ALT,
@@ -99,5 +100,7 @@ uint32_t strlen(const char* str)
 void EXTI15_10_IRQHandler(void)
 {
 	GPIO_irq_handling(GPIO_PIN_NO_13);
-	GPIO_toggle_output_pin(GPIOA, GPIO_PIN_NO_5);
+
+	USART_send_data(&usart2, msg[msg_num], strlen((char*)msg[msg_num]));
+	msg_num++;
 }
