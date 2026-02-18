@@ -5,7 +5,24 @@
 
 // NOTE: --- Structures for GPIO ---
 
+// Ring buffer logic
+
+#define USART_TX_BUFFER_SIZE			128
+#define USART_RX_BUFFER_SIZE			128
+
 // Configuration structure for a GPIO pin
+
+typedef struct {
+	uint8_t buffer[USART_TX_BUFFER_SIZE];
+	volatile uint16_t head;
+	volatile uint16_t tail;
+} USART_tx_ring_t;
+
+typedef struct {
+	uint8_t buffer[USART_RX_BUFFER_SIZE];
+	volatile uint16_t head;
+	volatile uint16_t tail;
+} USART_rx_ring_t;
 
 typedef struct {
 	uint8_t USART_mode;						// Possible values from @USART_MODE
@@ -14,6 +31,8 @@ typedef struct {
 	uint8_t USART_word_len;						// Possible values from @USART_WORD_LENGTH
 	uint8_t USART_parity_control;					// Possible values from @USART_PARITY_CONTROL
 	uint8_t USART_hw_flow_control;					// Possible values from @USART_HW_FLOW_CONTROL
+	USART_tx_ring_t tx_buffer;					// TX buffer for USART
+	USART_rx_ring_t rx_buffer;					// RX buffer for USART
 } USART_Pin_Config_t;
 
 // Handle structure for a GPIO pin
@@ -28,6 +47,8 @@ typedef struct {
 	uint8_t tx_busy_state;						// Is transmission in  busy state
 	uint8_t rx_busy_state;						// Is receiving in  busy state
 } USART_Handle_t;
+
+
 
 typedef enum {
 	USART_APP_EVENT_TX_CMPLT = 0,					// All bytes in the TX buffer have been sent

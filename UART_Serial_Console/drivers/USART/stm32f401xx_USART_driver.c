@@ -923,3 +923,50 @@ USART_application_event_callback(USART_Handle_t* p_USART_handle,
 	/* This is a week implementation. The application may override
 	 * this function. */
 }
+
+// NOTE: RING BUFFER LOGIC
+
+/********************************************************************************
+ * @fn				- buffer_next
+ *
+ * @brief			- TODO:
+ *
+ * @return			- None
+ *
+ * @Note			- None
+ *******************************************************************************/
+
+static inline uint16_t buffer_next(uint16_t current, uint16_t size)
+{
+	return (uint16_t)((current + 1U) % size);
+}
+
+/********************************************************************************
+ * @fn				- buffer_next
+ *
+ * @brief			- TODO:
+ *
+ * @return			- None
+ *
+ * @Note			- None
+ *******************************************************************************/
+
+static inline uint8_t buffer_tx_is_full(USART_tx_ring_t* buffer)
+{
+	return buffer_next(buffer->head, USART_TX_BUFFER_SIZE) == buffer->tail;
+}
+
+/********************************************************************************
+ * @fn				- buffer_next
+ *
+ * @brief			- TODO:
+ *
+ * @return			- None
+ *
+ * @Note			- None
+ *******************************************************************************/
+
+static inline uint8_t buffer_tx_is_empty(USART_tx_ring_t* buffer)
+{
+	return buffer->head == buffer->tail;
+}
