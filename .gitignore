@@ -12,3 +12,9 @@ Button_blink/*.map
 UART_Serial_Console/.clangd
 UART_Serial_Console/compile_flags.txt
 UART_Serial_Console/*.o
+UART_Serial_Console/*.elf
+UART_Serial_Console/*.map
+UART_Serial_Console/core/src/*.o
+UART_Serial_Console/drivers/GPIO/*.o
+UART_Serial_Console/drivers/RCC/*.o
+UART_Serial_Console/drivers/USART/*.o

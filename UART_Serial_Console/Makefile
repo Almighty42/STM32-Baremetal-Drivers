@@ -16,7 +16,7 @@ SOURCES = \
 OBJECTS = $(SOURCES:.c=.o)
 
 $(TARGET): $(OBJECTS)
-	$(CC) $(LDFLAGS) -o $@ $(OBJECTS)
+	$(CC) -o $@ $(OBJECTS) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

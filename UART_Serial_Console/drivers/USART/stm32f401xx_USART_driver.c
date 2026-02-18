@@ -796,41 +796,47 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 
 	if (eie_state) {
 		uint32_t sr_val = *sr;
+		uint32_t err_present = (sr_val & (1U << USART_SR_FE)) ||
+		                       (sr_val & (1U << USART_SR_NF)) ||
+		                       (sr_val & (1U << USART_SR_ORE));
 
-		if (sr_val & USART_SR_FE) {
-			/*
-			                    This bit is set by hardware when a
-			   de-synchronization, excessive noise or a break
-			   character is detected. It is cleared by a software
-			   sequence (an read to the USART_SR register followed
-			   by a read to the USART_DR register).
-			 */
-			USART_application_event_callback(p_USART_handle,
-			                                 USART_ERR_FE);
+		if (err_present) {
+			if (sr_val & (1U << USART_SR_FE)) {
+				/*
+				                    This bit is set by hardware
+				   when a de-synchronization, excessive noise or
+				   a break character is detected. It is cleared
+				   by a software sequence (an read to the
+				   USART_SR register followed by a read to the
+				   USART_DR register).
+				 */
+				USART_application_event_callback(p_USART_handle,
+				                                 USART_ERR_FE);
+			}
+
+			if (sr_val & (1U << USART_SR_NF)) {
+				/*
+				                    This bit is set by hardware
+				   when noise is detected on a received frame.
+				   It is cleared by a software sequence (an read
+				   to the USART_SR register followed by a read
+				   to the USART_DR register).
+				 */
+				USART_application_event_callback(p_USART_handle,
+				                                 USART_ERR_NE);
+			}
+
+			if (sr_val & (1U << USART_SR_ORE)) {
+				USART_application_event_callback(p_USART_handle,
+				                                 USART_ERR_ORE);
+			}
+
+			// WARNING: This clears DR as well, which means any data
+			// that was in DR at the time of the error is lost. This
+			// isn't an issue as any data in DR is likely to be
+			// corrupted in case this part of the code is called
+			// USART_clear_error_flags(p_USART_handle->p_USARTx);
 		}
-
-		if (sr_val & USART_SR_NF) {
-			/*
-			                    This bit is set by hardware when
-			   noise is detected on a received frame. It is cleared
-			   by a software sequence (an read to the USART_SR
-			   register followed by a read to the USART_DR
-			   register).
-			 */
-			USART_application_event_callback(p_USART_handle,
-			                                 USART_ERR_NE);
-		}
-
-		if (sr_val & USART_SR_ORE) {
-			USART_application_event_callback(p_USART_handle,
-			                                 USART_ERR_ORE);
-		}
-
-		// WARNING: This clears DR as well, which means any data that
-		// was in DR at the time of the error is lost. This isn't an
-		// issue as any data in DR is likely to be corrupted in case
-		// this part of the code is called
-		USART_clear_error_flags(p_USART_handle->p_USARTx);
 	}
 }
 
