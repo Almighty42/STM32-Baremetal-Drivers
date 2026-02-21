@@ -3,6 +3,7 @@
 // Peripheral drivers
 #include "stm32f401xx_GPIO_driver.h"
 #include "stm32f401xx_USART_driver.h"
+#include "utils.h"
 // Stdlib
 #include <stdint.h>
 
@@ -119,6 +120,41 @@ static void process_line(char* line)
 		USART_write(" led toggle\t- Toggle LED state\r\n");
 		USART_write(" status\t- Show system status\r\n");
 		USART_write(" help\t- Show this help\r\n");
+	}
+	else if (str_cmp(line, "led") == 0) {
+		USART_write("ERROR: Incorrect usage of led command\r\n");
+		USART_write("Usage:\r\n");
+		USART_write(" led on\r\n");
+		USART_write(" led off\r\n");
+		USART_write(" led toggle\r\n");
+	}
+	else if (str_cmp(line, "led on") == 0) {
+		led_init();
+		led_on();
+		USART_write("OK: LED is now ON\r\n");
+	}
+	else if (str_cmp(line, "led off") == 0) {
+		led_init();
+		led_off();
+		USART_write("OK: LED is now OFF\r\n");
+	}
+	else if (str_cmp(line, "led toggle") == 0) {
+		led_init();
+		led_toggle();
+		if (IS_BIT_SET(GPIOA->ODR, GPIO_PIN_NO_5))
+			USART_write("OK: LED is now ON\r\n");
+		else
+			USART_write("OK: LED is now OFF\r\n");
+	}
+	else if (str_cmp(line, "status") == 0) {
+		USART_write("System Status:\r\n");
+		if (IS_BIT_SET(GPIOA->ODR, GPIO_PIN_NO_5))
+			USART_write(" LED State: ON\r\n");
+		else
+			USART_write(" LED State: OFF\r\n");
+		// TODO: UART Baud / Uptime implementation
+		USART_write(" UART Baud: ...\r\n");
+		USART_write(" Uptime: ... seconds\r\n");
 	}
 	else {
 		USART_write("ERROR: Unknown command\r\n");

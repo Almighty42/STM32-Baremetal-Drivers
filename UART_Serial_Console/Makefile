@@ -9,6 +9,7 @@ DBFLAGS  = -g3
 TARGET  = usart.elf
 SOURCES = \
     core/src/main.c \
+    core/src/utils.c \
     core/src/startup.c \
     drivers/GPIO/stm32f401xx_GPIO_driver.c \
     drivers/RCC/stm32f401xx_RCC_driver.c \
