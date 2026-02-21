@@ -12,25 +12,61 @@
 USART_Handle_t usart2;
 
 static void USART2_init(void);
-static void USART_write(char str[]);
+static void process_line(char* line);
 
 // Helper functions
+static uint32_t str_cmp(const char* s1, const char* s2);
 static uint32_t str_len(const uint8_t* str);
+static void USART_write(char str[]);
+
+static char line_buffer[LINE_BUFFER_SIZE];
+static uint32_t line_len = 0;
 
 int main(void)
 {
 	USART2_init();
 
-	// USART_write("\r\n");
-	// USART_write("========================\r\n");
-	// USART_write("STM32F401RE UART Console\r\n");
-	// USART_write("========================\r\n");
-	// USART_write("Type 'help' for available commands\r\n");
-	// USART_write("> ");
+	USART_write("\r\n");
+	USART_write("========================\r\n");
+	USART_write("STM32F401RE UART Console\r\n");
+	USART_write("========================\r\n");
+	USART_write("Type 'help' for available commands\r\n");
+	USART_write("> ");
 
-	// USART_receive_data_it(&usart2, rx_buff, 1);
+	uint8_t ch;
 
 	while (1) {
+		if (USART_read_byte(&usart2, &ch)) {
+			// Backspace handling
+			if (ch == '\b' || ch == 0x7F) {
+				if (line_len > 0) {
+					line_len--;
+					USART_write("\b \b");
+				}
+				continue;
+			}
+
+			USART_write_byte(&usart2, &ch, 1);
+
+			if (ch == '\r' || ch == '\n') {
+				USART_write("\r\n");
+				if (line_len < LINE_BUFFER_SIZE)
+					line_buffer[line_len] = '\0';
+				else
+					line_buffer[LINE_BUFFER_SIZE - 1] =
+					    '\0';
+				process_line(line_buffer);
+				line_len = 0;
+				USART_write("> ");
+			}
+			else {
+				if (line_len < LINE_BUFFER_SIZE - 1)
+					line_buffer[line_len++] = (char)ch;
+				else {
+					// Line overflow
+				}
+			}
+		}
 	}
 }
 
@@ -70,12 +106,24 @@ void USART2_init(void)
 	USART_peri_control(USART2, ENABLE);
 }
 
-static void USART_write(char str[])
+static void process_line(char* line)
 {
-	// TODO:
-	// THIS FUNCTION WRITES TO TX BUFFER
-	// THEN THE TX-EMPTY INTERRUPT PULLS FROM THE BUFFER AND FEEDS USART
-	// UNTIL EMPTY
+	while (*line == ' ' || *line == '\t')
+		line++;
+	if (*line == '\0')
+		return;
+	if (str_cmp(line, "help") == 0) {
+		USART_write("Available commands:\r\n");
+		USART_write(" led on\t- Turn LED on\r\n");
+		USART_write(" led off\t- Turn LED off\r\n");
+		USART_write(" led toggle\t- Toggle LED state\r\n");
+		USART_write(" status\t- Show system status\r\n");
+		USART_write(" help\t- Show this help\r\n");
+	}
+	else {
+		USART_write("ERROR: Unknown command\r\n");
+		USART_write("Type 'help' for available commands\r\n");
+	}
 }
 
 static uint32_t str_len(const uint8_t* str)
@@ -86,11 +134,27 @@ static uint32_t str_len(const uint8_t* str)
 	return len;
 }
 
-void USART2_IRQHandler(void)
+static uint32_t str_cmp(const char* s1, const char* s2)
 {
+	while (*s1 && (*s1 == *s2)) {
+		s1++;
+		s2++;
+	}
+	return (uint32_t)((unsigned char)*s1) - (uint32_t)((unsigned char)*s2);
 }
 
-void USART_application_event_callback(USART_Handle_t* p_USART_handle,
-                                      USART_AppEvent_t app_ev)
+static void USART_write(char str[])
 {
+	uint32_t len = str_len((uint8_t*)str);
+	uint32_t sent = 0;
+
+	while (sent < len) {
+		sent += USART_write_byte(&usart2, (const uint8_t*)&str[sent],
+		                         len - sent);
+	}
+}
+
+void USART2_IRQHandler(void)
+{
+	USART_irq_handling(&usart2);
 }

@@ -3,7 +3,7 @@
 
 #include "stm32f401xx.h"
 
-// NOTE: --- Structures for GPIO ---
+// NOTE: --- Structures for USART ---
 
 // Ring buffer logic
 
@@ -13,15 +13,15 @@
 // Configuration structure for a GPIO pin
 
 typedef struct {
-	uint8_t buffer[USART_TX_BUFFER_SIZE];
-	volatile uint16_t head;
-	volatile uint16_t tail;
+	uint8_t buffer[USART_TX_BUFFER_SIZE];				// Transmit ring buffer
+	volatile uint16_t head;						// Tx ring buffer head
+	volatile uint16_t tail;						// Tx ring buffer tail
 } USART_tx_ring_t;
 
 typedef struct {
-	uint8_t buffer[USART_RX_BUFFER_SIZE];
-	volatile uint16_t head;
-	volatile uint16_t tail;
+	uint8_t buffer[USART_RX_BUFFER_SIZE];				// Receive ring buffer
+	volatile uint16_t head;						// Rx ring buffer head
+	volatile uint16_t tail;						// Rx ring buffer tail
 } USART_rx_ring_t;
 
 typedef struct {
@@ -31,8 +31,6 @@ typedef struct {
 	uint8_t USART_word_len;						// Possible values from @USART_WORD_LENGTH
 	uint8_t USART_parity_control;					// Possible values from @USART_PARITY_CONTROL
 	uint8_t USART_hw_flow_control;					// Possible values from @USART_HW_FLOW_CONTROL
-	USART_tx_ring_t tx_buffer;					// TX buffer for USART
-	USART_rx_ring_t rx_buffer;					// RX buffer for USART
 } USART_Pin_Config_t;
 
 // Handle structure for a GPIO pin
@@ -46,6 +44,8 @@ typedef struct {
 	uint32_t rx_len;						// Rx length
 	uint8_t tx_busy_state;						// Is transmission in  busy state
 	uint8_t rx_busy_state;						// Is receiving in  busy state
+	USART_tx_ring_t tx_buffer;					// TX buffer for USART
+	USART_rx_ring_t rx_buffer;					// RX buffer for USART
 } USART_Handle_t;
 
 
@@ -250,6 +250,9 @@ typedef enum {
 // is disabled. The application MUST ensure that p_tx_buffer / p_rx_buffer are 16-bit aligned and that the length
 // passed corresponds to the number of BYTES, not words.
 
+// WARNING: Prefer to use USART_read_byte / USART_write_byte ( ring buffer based, easier and more efficent )
+// then other implementations
+
 // Peripheral clock setup
 USART_status_t USART_peri_clk_control(USART_TypeDef* p_USART_x, uint8_t EN_or_DI);
 
@@ -258,6 +261,10 @@ USART_status_t USART_init(USART_Handle_t *p_USART_handle);
 USART_status_t USART_de_init(USART_TypeDef* p_USART_x);
 
 // Data send / receive
+uint32_t USART_read_byte(USART_Handle_t* p_USART_handle, uint8_t* out);
+uint32_t USART_write_byte(USART_Handle_t* p_USART_handle, const uint8_t* data, uint32_t len);
+
+// Data send / receive ( Old / inefficent )
 USART_status_t USART_send_data(USART_Handle_t* p_USART_handle, const uint8_t* p_tx_buffer, uint32_t len);
 USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle, uint8_t* p_rx_buffer, uint32_t len);
 USART_status_t USART_send_data_it(USART_Handle_t *p_USART_handle,uint8_t *p_tx_buffer, uint32_t len);

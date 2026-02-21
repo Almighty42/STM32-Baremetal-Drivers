@@ -8,9 +8,32 @@
 /********************************************************************************
  *
  * TODO: Future plans for this driver:
- * 1. Implement DMA USART in future
+ * 1. Refactor code and make the driver easier to navigate
+ * 2. Add 9bit option for RX/TX
+ * 3. Implement DMA USART in future
  *
  *******************************************************************************/
+
+// NOTE: RING BUFFER LOGIC
+
+/********************************************************************************
+ * @fn				- buffer_next
+ *
+ * @brief			- Returns pointer to the next head / tail
+ * position
+ *
+ * @param[current]		- Base pointer
+ * @param[size]		- Buffer max size
+ *
+ * @return			- Pointer to next head / tail position
+ *
+ * @Note			- None
+ *******************************************************************************/
+
+static inline uint16_t buffer_next(uint16_t current, uint16_t size)
+{
+	return (uint16_t)((current + 1U) % size);
+}
 
 /********************************************************************************
  * @fn				- USART_peri_clk_control
@@ -182,11 +205,19 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 		SET_BIT(*cr3, 9);
 	}
 
+	// Initializes buffers
+	p_USART_handle->tx_buffer.head = p_USART_handle->tx_buffer.tail = 0;
+	p_USART_handle->rx_buffer.head = p_USART_handle->rx_buffer.tail = 0;
+
+	// Enables RXNE and error interrupts
+	SET_BIT(*cr1, USART_CR1_RXNEIE);
+	SET_BIT(*cr3, USART_CR3_EIE);
+
 	return USART_OK;
 }
 
 /********************************************************************************
- * @fn				- USART_deinit
+ * @fn				- USART_de_init
  *
  * @brief			- Resets a USART peripheral
  *
@@ -215,6 +246,67 @@ USART_status_t USART_de_init(USART_TypeDef* p_USART_x)
 	}
 
 	return status;
+}
+
+/********************************************************************************
+ * @fn				- USART_write_byte
+ *
+ * @brief			- Writes to TX ring buffer
+ *
+ * @param[*p_USART_handle]	- Handle structure of a USART peripheral
+ * @param[*data]		- Data stream to write to buffer
+ * @param[len]			- Number of bytes to write
+ *
+ * @return			- Number of bytes written
+ *
+ * @Note			- TX ring buffer is used when TXEIE interrupt is
+ * fired, data gets pulled from oldest to newest
+ *******************************************************************************/
+
+uint32_t USART_write_byte(USART_Handle_t* p_USART_handle, const uint8_t* data,
+                          uint32_t len)
+{
+	USART_tx_ring_t* tb = &p_USART_handle->tx_buffer;
+	uint32_t written = 0;
+
+	while (written < len) {
+		uint16_t next = buffer_next(tb->head, USART_TX_BUFFER_SIZE);
+		// Buffer full
+		if (next == tb->tail)
+			break;
+		tb->buffer[tb->head] = data[written++];
+		tb->head = next;
+	}
+
+	if (written > 0)
+		SET_BIT(p_USART_handle->p_USARTx->CR1, USART_CR1_TXEIE);
+
+	return written;
+}
+
+/********************************************************************************
+ * @fn				- USART_read_byte
+ *
+ * @brief			- Reads from RX ring buffer
+ *
+ * @param[*p_USART_handle]	- Handle structure of a USART peripheral
+ * @param[*out]			- Output stream to write to from ring buffer
+ *
+ * @return			- 0 if empty, 1 if not
+ *
+ * @Note			- RX ring buffer is used when RXNEIE interrupt
+ * is fired
+ *******************************************************************************/
+
+uint32_t USART_read_byte(USART_Handle_t* p_USART_handle, uint8_t* out)
+{
+	USART_rx_ring_t* rb = &p_USART_handle->rx_buffer;
+	// Is empty
+	if (rb->head == rb->tail)
+		return 0;
+	*out = rb->buffer[rb->tail];
+	rb->tail = buffer_next(rb->tail, USART_RX_BUFFER_SIZE);
+	return 1;
 }
 
 /********************************************************************************
@@ -633,7 +725,7 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 	uint8_t parity_control =
 	    p_USART_handle->USART_Pin_Config.USART_parity_control;
 
-	uint16_t* p_data;
+	// uint16_t* p_data;
 	// Check state of TC bit in SR
 	uint32_t tc_state = IS_BIT_SET(*sr, USART_SR_TC);
 	// Check state of TCEIE bit
@@ -663,35 +755,31 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 	uint32_t txeie_state = IS_BIT_SET(*cr1, USART_CR1_TXEIE);
 
 	if (txe_state && txeie_state) {
-		// TXE caused interrupt
+		// TXE
 
-		if (p_USART_handle->tx_busy_state == USART_BUSY_IN_TX) {
-			if (p_USART_handle->tx_len > 0) {
-				if (word_len == USART_WORDLEN_9BITS) {
-					p_data =
-					    (uint16_t*)
-					        p_USART_handle->p_tx_buffer;
-					*dr = (*p_data & (uint16_t)0x01FF);
-					if (parity_control ==
-					    USART_PARITY_DISABLE) {
-						p_USART_handle->p_tx_buffer +=
-						    2;
-						p_USART_handle->tx_len -= 2;
-					}
-					else {
-						p_USART_handle->p_tx_buffer++;
-						p_USART_handle->tx_len--;
-					}
-				}
-				else {
-					*dr = (*p_USART_handle->p_tx_buffer &
-					       (uint8_t)0xFF);
-					p_USART_handle->p_tx_buffer++;
-					p_USART_handle->tx_len--;
-				}
-			}
-			if (p_USART_handle->tx_len == 0) {
+		if (word_len == USART_WORDLEN_9BITS) {
+			// TODO: Handle 9bit wordlen
+			//
+			// p_data = (uint16_t*)p_USART_handle->p_tx_buffer;
+			// *dr = (*p_data & (uint16_t)0x01FF);
+			// if (parity_control == USART_PARITY_DISABLE) {
+			// 	p_USART_handle->p_tx_buffer += 2;
+			// 	p_USART_handle->tx_len -= 2;
+			// }
+			// else {
+			// 	p_USART_handle->p_tx_buffer++;
+			// 	p_USART_handle->tx_len--;
+			// }
+		}
+		else {
+			USART_tx_ring_t* tb = &p_USART_handle->tx_buffer;
+
+			if (tb->head == tb->tail)
 				CLEAR_BIT(*cr1, USART_CR1_TXEIE);
+			else {
+				*dr = tb->buffer[tb->tail];
+				tb->tail =
+				    buffer_next(tb->tail, USART_TX_BUFFER_SIZE);
 			}
 		}
 	}
@@ -703,52 +791,45 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 
 	if (rxne_state && rxneie_state) {
 		// RXNE
+		uint8_t data;
 
-		if (p_USART_handle->rx_busy_state == USART_BUSY_IN_RX) {
-			if (p_USART_handle->rx_len > 0) {
-				if (word_len == USART_WORDLEN_9BITS) {
-					if (parity_control ==
-					    USART_PARITY_DISABLE) {
-						*((uint16_t*)p_USART_handle
-						      ->p_rx_buffer) =
-						    (*dr & (uint16_t)0x01FF);
+		if (word_len == USART_WORDLEN_9BITS) {
+			// TODO: Handle 9bit wordlen
+			//
+			// if (parity_control ==
+			//     USART_PARITY_DISABLE) {
+			// 	*((uint16_t*)p_USART_handle
+			// 	      ->p_rx_buffer) =
+			// 	    (*dr & (uint16_t)0x01FF);
+			//
+			// 	p_USART_handle->p_rx_buffer +=
+			// 	    2;
+			// 	p_USART_handle->rx_len -= 2;
+			// }
+			// else {
+			// 	*p_USART_handle->p_rx_buffer =
+			// 	    (*dr & (uint8_t)0xFF);
+			// 	p_USART_handle->p_rx_buffer++;
+			// 	p_USART_handle->rx_len--;
+			// }
+		}
+		else {
+			if (parity_control == USART_PARITY_DISABLE)
+				data = (*dr & 0xFF);
+			else
+				data = (*dr & 0x7F);
 
-						p_USART_handle->p_rx_buffer +=
-						    2;
-						p_USART_handle->rx_len -= 2;
-					}
-					else {
-						*p_USART_handle->p_rx_buffer =
-						    (*dr & (uint8_t)0xFF);
-						p_USART_handle->p_rx_buffer++;
-						p_USART_handle->rx_len--;
-					}
-				}
-				else {
-					if (parity_control ==
-					    USART_PARITY_DISABLE) {
-						*p_USART_handle->p_rx_buffer =
-						    (uint8_t)(*dr &
-						              (uint8_t)0xFF);
-					}
-					else {
-						*p_USART_handle->p_rx_buffer =
-						    (uint8_t)(*dr &
-						              (uint8_t)0x7F);
-					}
+			USART_rx_ring_t* rb = &p_USART_handle->rx_buffer;
+			uint16_t next =
+			    buffer_next(rb->head, USART_RX_BUFFER_SIZE);
 
-					/* Incrementing the pRxBuffer */
-					p_USART_handle->p_rx_buffer++;
-					p_USART_handle->rx_len--;
-				}
+			if (next != rb->tail) {
+				rb->buffer[rb->head] = data;
+				rb->head = next;
 			}
-
-			if (!p_USART_handle->rx_len) {
-				/* Disabling the RXNE */
-				CLEAR_BIT(*cr1, USART_CR1_RXNEIE);
-				p_USART_handle->rx_busy_state = USART_READY;
-				USART_application_event_callback(
-				    p_USART_handle, USART_EVENT_RX_CMPLT);
+			else {
+				// TODO:
+				// Handle overflow
 			}
 		}
 	}
@@ -922,51 +1003,4 @@ USART_application_event_callback(USART_Handle_t* p_USART_handle,
 {
 	/* This is a week implementation. The application may override
 	 * this function. */
-}
-
-// NOTE: RING BUFFER LOGIC
-
-/********************************************************************************
- * @fn				- buffer_next
- *
- * @brief			- TODO:
- *
- * @return			- None
- *
- * @Note			- None
- *******************************************************************************/
-
-static inline uint16_t buffer_next(uint16_t current, uint16_t size)
-{
-	return (uint16_t)((current + 1U) % size);
-}
-
-/********************************************************************************
- * @fn				- buffer_next
- *
- * @brief			- TODO:
- *
- * @return			- None
- *
- * @Note			- None
- *******************************************************************************/
-
-static inline uint8_t buffer_tx_is_full(USART_tx_ring_t* buffer)
-{
-	return buffer_next(buffer->head, USART_TX_BUFFER_SIZE) == buffer->tail;
-}
-
-/********************************************************************************
- * @fn				- buffer_next
- *
- * @brief			- TODO:
- *
- * @return			- None
- *
- * @Note			- None
- *******************************************************************************/
-
-static inline uint8_t buffer_tx_is_empty(USART_tx_ring_t* buffer)
-{
-	return buffer->head == buffer->tail;
 }
