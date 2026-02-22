@@ -8,32 +8,26 @@
 /********************************************************************************
  *
  * TODO: Future plans for this driver:
- * 1. Refactor code and make the driver easier to navigate
- * 2. Add 9bit option for RX/TX
- * 3. Implement DMA USART in future
+ * 1. Implement DMA USART in future
  *
  *******************************************************************************/
-
-// NOTE: RING BUFFER LOGIC
 
 /********************************************************************************
- * @fn				- buffer_next
  *
- * @brief			- Returns pointer to the next head / tail
- * position
+ * INFO: Driver map
+ * @PERIPHERAL_CLOCK_SETUP
+ * @INIT_DE-INIT
+ * @RING_BUFFER_LOGIC
+ * @DATA_SEND_RECEIVE_RING_BUFFER_IMPLEMENTATION
+ * @DATA_SEND_RECEIVE_POLLING_INTERRUPT
+ * @PERIPHERAL_CONTROL_API
+ * @IRQ_CONFIGURATION_AND_ISR_HANDLING
+ * @UTILS
+ * @APPLICATION_CALLBACK
  *
- * @param[current]		- Base pointer
- * @param[size]		- Buffer max size
- *
- * @return			- Pointer to next head / tail position
- *
- * @Note			- None
  *******************************************************************************/
 
-static inline uint16_t buffer_next(uint16_t current, uint16_t size)
-{
-	return (uint16_t)((current + 1U) % size);
-}
+// NOTE: @PERIPHERAL_CLOCK_SETUP
 
 /********************************************************************************
  * @fn				- USART_peri_clk_control
@@ -82,6 +76,8 @@ USART_status_t USART_peri_clk_control(USART_TypeDef* p_USART_x,
 
 	return status;
 }
+
+// NOTE: @INIT_DE-INIT
 
 /********************************************************************************
  * @fn				- USART_init
@@ -248,6 +244,29 @@ USART_status_t USART_de_init(USART_TypeDef* p_USART_x)
 	return status;
 }
 
+// NOTE: @RING_BUFFER_LOGIC
+
+/********************************************************************************
+ * @fn				- buffer_next
+ *
+ * @brief			- Returns pointer to the next head / tail
+ * position
+ *
+ * @param[current]		- Base pointer
+ * @param[size]		- Buffer max size
+ *
+ * @return			- Pointer to next head / tail position
+ *
+ * @Note			- None
+ *******************************************************************************/
+
+static inline uint16_t buffer_next(uint16_t current, uint16_t size)
+{
+	return (uint16_t)((current + 1U) % size);
+}
+
+// NOTE: @DATA_SEND_RECEIVE_RING_BUFFER_IMPLEMENTATION
+
 /********************************************************************************
  * @fn				- USART_write_byte
  *
@@ -309,10 +328,12 @@ uint32_t USART_read_byte(USART_Handle_t* p_USART_handle, uint8_t* out)
 	return 1;
 }
 
+// NOTE: @DATA_SEND_RECEIVE_POLLING_INTERRUPT
+
 /********************************************************************************
- * @fn				- USART_send_data
+ * @fn				- USART_write_data_pl
  *
- * @brief			- Sends data over USART using a polling method
+ * @brief			- Write data over USART using a polling method
  *
  * @param[*p_USART_x]		- Base address of the USART peripheral
  * @param[*p_tx_buffer]		- Transmission buffer ( pointer )
@@ -323,8 +344,8 @@ uint32_t USART_read_byte(USART_Handle_t* p_USART_handle, uint8_t* out)
  * @Note			- None
  *******************************************************************************/
 
-USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
-                               const uint8_t* p_tx_buffer, uint32_t len)
+USART_status_t USART_write_data_pl(USART_Handle_t* p_USART_handle,
+                                   const uint8_t* p_tx_buffer, uint32_t len)
 {
 	uint16_t* pdata;
 
@@ -386,9 +407,9 @@ USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
 }
 
 /********************************************************************************
- * @fn				- USART_receive_data
+ * @fn				- USART_read_data_pl
  *
- * @brief			- Receives data over USART
+ * @brief			- Reads data over USART using a polling method
  *
  * @param[*p_USART_x]		- Base address of the USART peripheral
  * @param[*p_rx_buffer]		- Receive buffer ( pointer )
@@ -402,7 +423,7 @@ USART_status_t USART_send_data(USART_Handle_t* p_USART_handle,
  * USART_irq_handling(), prefer to use USART_receive_data_it
  *******************************************************************************/
 
-USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
+USART_status_t USART_read_data_pl(USART_Handle_t* p_USART_handle,
                                   uint8_t* p_rx_buffer, uint32_t len)
 {
 	VALIDATE_PTR(p_USART_handle, USART_ERROR_NULL_PTR);
@@ -461,9 +482,9 @@ USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
 }
 
 /********************************************************************************
- * @fn				- USART_send_data_it
+ * @fn				- USART_write_data_it
  *
- * @brief			- Sends data over USART in interrupt mode
+ * @brief			- Writes data over USART via interrupts
  *
  * @param[*p_USART_handle]	- Handle structure of a USART peripheral
  * @param[*p_tx_buffer]		- Transmission buffer ( pointer )
@@ -474,8 +495,8 @@ USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle,
  * @Note			- None
  *******************************************************************************/
 
-USART_status_t USART_send_data_it(USART_Handle_t* p_USART_handle,
-                                  uint8_t* p_tx_buffer, uint32_t len)
+USART_status_t USART_write_data_it(USART_Handle_t* p_USART_handle,
+                                   uint8_t* p_tx_buffer, uint32_t len)
 {
 	VALIDATE_PTR(p_USART_handle, USART_ERROR_NULL_PTR);
 	VALIDATE_PTR(p_tx_buffer, USART_ERROR_NULL_PTR);
@@ -507,9 +528,9 @@ USART_status_t USART_send_data_it(USART_Handle_t* p_USART_handle,
 }
 
 /********************************************************************************
- * @fn				- USART_receive_data_it
+ * @fn				- USART_read_data_it
  *
- * @brief			- Receive data over USART in interrupt mode
+ * @brief			- Reads data over USART via interrupts
  *
  * @param[*p_USART_handle]	- Handle structure of a USART peripheral
  * @param[*p_rx_buffer]		- Receive buffer ( pointer )
@@ -520,8 +541,8 @@ USART_status_t USART_send_data_it(USART_Handle_t* p_USART_handle,
  * @Note			- None
  *******************************************************************************/
 
-USART_status_t USART_receive_data_it(USART_Handle_t* p_USART_handle,
-                                     uint8_t* p_rx_buffer, uint32_t len)
+USART_status_t USART_read_data_it(USART_Handle_t* p_USART_handle,
+                                  uint8_t* p_rx_buffer, uint32_t len)
 {
 	VALIDATE_PTR(p_USART_handle, USART_ERROR_NULL_PTR);
 	VALIDATE_PTR(p_rx_buffer, USART_ERROR_NULL_PTR);
@@ -547,6 +568,8 @@ USART_status_t USART_receive_data_it(USART_Handle_t* p_USART_handle,
 
 	return USART_OK;
 }
+
+// NOTE: @PERIPHERAL_CONTROL_API
 
 /********************************************************************************
  * @fn				- USART_peri_control
@@ -633,6 +656,8 @@ static void USART_clear_error_flags(USART_TypeDef* p_USART_x)
 	tmp = p_USART_x->DR;
 	(void)tmp;
 }
+
+// NOTE: IRQ_CONFIGURATION_AND_ISR_HANDLING
 
 /********************************************************************************
  * @fn				- USART_irq_interrupt_config
@@ -756,31 +781,13 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 
 	if (txe_state && txeie_state) {
 		// TXE
+		USART_tx_ring_t* tb = &p_USART_handle->tx_buffer;
 
-		if (word_len == USART_WORDLEN_9BITS) {
-			// TODO: Handle 9bit wordlen
-			//
-			// p_data = (uint16_t*)p_USART_handle->p_tx_buffer;
-			// *dr = (*p_data & (uint16_t)0x01FF);
-			// if (parity_control == USART_PARITY_DISABLE) {
-			// 	p_USART_handle->p_tx_buffer += 2;
-			// 	p_USART_handle->tx_len -= 2;
-			// }
-			// else {
-			// 	p_USART_handle->p_tx_buffer++;
-			// 	p_USART_handle->tx_len--;
-			// }
-		}
+		if (tb->head == tb->tail)
+			CLEAR_BIT(*cr1, USART_CR1_TXEIE);
 		else {
-			USART_tx_ring_t* tb = &p_USART_handle->tx_buffer;
-
-			if (tb->head == tb->tail)
-				CLEAR_BIT(*cr1, USART_CR1_TXEIE);
-			else {
-				*dr = tb->buffer[tb->tail];
-				tb->tail =
-				    buffer_next(tb->tail, USART_TX_BUFFER_SIZE);
-			}
+			*dr = tb->buffer[tb->tail];
+			tb->tail = buffer_next(tb->tail, USART_TX_BUFFER_SIZE);
 		}
 	}
 
@@ -791,46 +798,24 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 
 	if (rxne_state && rxneie_state) {
 		// RXNE
-		uint8_t data;
+		uint16_t data;
 
 		if (word_len == USART_WORDLEN_9BITS) {
-			// TODO: Handle 9bit wordlen
-			//
-			// if (parity_control ==
-			//     USART_PARITY_DISABLE) {
-			// 	*((uint16_t*)p_USART_handle
-			// 	      ->p_rx_buffer) =
-			// 	    (*dr & (uint16_t)0x01FF);
-			//
-			// 	p_USART_handle->p_rx_buffer +=
-			// 	    2;
-			// 	p_USART_handle->rx_len -= 2;
-			// }
-			// else {
-			// 	*p_USART_handle->p_rx_buffer =
-			// 	    (*dr & (uint8_t)0xFF);
-			// 	p_USART_handle->p_rx_buffer++;
-			// 	p_USART_handle->rx_len--;
-			// }
+			data = (uint16_t)(*dr & 0x01FF);
 		}
 		else {
 			if (parity_control == USART_PARITY_DISABLE)
-				data = (*dr & 0xFF);
+				data = (uint16_t)(*dr & 0x00FF);
 			else
-				data = (*dr & 0x7F);
+				data = (uint16_t)(*dr & 0x007F);
+		}
 
-			USART_rx_ring_t* rb = &p_USART_handle->rx_buffer;
-			uint16_t next =
-			    buffer_next(rb->head, USART_RX_BUFFER_SIZE);
+		USART_rx_ring_t* rb = &p_USART_handle->rx_buffer;
+		uint16_t next = buffer_next(rb->head, USART_RX_BUFFER_SIZE);
 
-			if (next != rb->tail) {
-				rb->buffer[rb->head] = data;
-				rb->head = next;
-			}
-			else {
-				// TODO:
-				// Handle overflow
-			}
+		if (next != rb->tail) {
+			rb->buffer[rb->head] = data;
+			rb->head = next;
 		}
 	}
 
@@ -921,6 +906,8 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 	}
 }
 
+// NOTE: @UTILS
+
 /********************************************************************************
  * @fn				- USART_set_baud_rate
  *
@@ -983,6 +970,8 @@ void USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate)
 	// Copy the value of tempreg in to BRR register
 	p_USART_x->BRR = temp_reg;
 }
+
+// NOTE: @APPLICATION_CALLBACK
 
 /********************************************************************************
  * @fn				- USART_application_event_callback

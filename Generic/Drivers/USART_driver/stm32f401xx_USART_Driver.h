@@ -13,13 +13,13 @@
 // Configuration structure for a GPIO pin
 
 typedef struct {
-	uint8_t buffer[USART_TX_BUFFER_SIZE];				// Transmit ring buffer
+	uint16_t buffer[USART_TX_BUFFER_SIZE];				// Transmit ring buffer
 	volatile uint16_t head;						// Tx ring buffer head
 	volatile uint16_t tail;						// Tx ring buffer tail
 } USART_tx_ring_t;
 
 typedef struct {
-	uint8_t buffer[USART_RX_BUFFER_SIZE];				// Receive ring buffer
+	uint16_t buffer[USART_RX_BUFFER_SIZE];				// Receive ring buffer
 	volatile uint16_t head;						// Rx ring buffer head
 	volatile uint16_t tail;						// Rx ring buffer tail
 } USART_rx_ring_t;
@@ -260,15 +260,15 @@ USART_status_t USART_peri_clk_control(USART_TypeDef* p_USART_x, uint8_t EN_or_DI
 USART_status_t USART_init(USART_Handle_t *p_USART_handle);
 USART_status_t USART_de_init(USART_TypeDef* p_USART_x);
 
-// Data send / receive
+// Data send / receive ( Ring buffer implementation )
 uint32_t USART_read_byte(USART_Handle_t* p_USART_handle, uint8_t* out);
 uint32_t USART_write_byte(USART_Handle_t* p_USART_handle, const uint8_t* data, uint32_t len);
 
-// Data send / receive ( Old / inefficent )
-USART_status_t USART_send_data(USART_Handle_t* p_USART_handle, const uint8_t* p_tx_buffer, uint32_t len);
-USART_status_t USART_receive_data(USART_Handle_t* p_USART_handle, uint8_t* p_rx_buffer, uint32_t len);
-USART_status_t USART_send_data_it(USART_Handle_t *p_USART_handle,uint8_t *p_tx_buffer, uint32_t len);
-USART_status_t USART_receive_data_it(USART_Handle_t *p_USART_handle, uint8_t *p_rx_buffer, uint32_t len);
+// Data send / receive ( polling / interrupt ) 
+USART_status_t USART_write_data_pl(USART_Handle_t* p_USART_handle, const uint8_t* p_tx_buffer, uint32_t len);
+USART_status_t USART_read_data_pl(USART_Handle_t* p_USART_handle, uint8_t* p_rx_buffer, uint32_t len);
+USART_status_t USART_write_data_it(USART_Handle_t *p_USART_handle,uint8_t *p_tx_buffer, uint32_t len);
+USART_status_t USART_read_data_it(USART_Handle_t *p_USART_handle, uint8_t *p_rx_buffer, uint32_t len);
 
 // Peripheral control API
 USART_status_t USART_peri_control(USART_TypeDef* p_USART_x, uint8_t EN_or_DI);
@@ -280,10 +280,10 @@ USART_status_t USART_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);
 USART_status_t USART_irq_priority_config(uint8_t irq_n, uint32_t irq_prio);
 void USART_irq_handling(USART_Handle_t *p_USART_handle);
 
-// Application callback
-void USART_application_event_callback(USART_Handle_t *p_USART_handle,USART_AppEvent_t app_ev);
-
 // Utils
 void USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate);
+
+// Application callback
+void USART_application_event_callback(USART_Handle_t *p_USART_handle,USART_AppEvent_t app_ev);
 
 #endif

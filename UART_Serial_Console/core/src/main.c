@@ -23,6 +23,8 @@ static void USART_write(char str[]);
 static char line_buffer[LINE_BUFFER_SIZE];
 static uint32_t line_len = 0;
 
+static uint32_t uptime = 0;
+
 int main(void)
 {
 	USART2_init();
