@@ -296,7 +296,17 @@ typedef struct {
 	__IO uint32_t GTPR;
 } USART_TypeDef;
 
-// TODO: TypeDef SPI
+typedef struct {
+	__IO uint32_t CR1;
+	__IO uint32_t CR2;
+	__IO uint32_t SR;
+	__IO uint32_t DR;
+	__IO uint32_t CRCPR;
+	__I uint32_t RXCRCR;
+	__I uint32_t TXCRCR;
+	__IO uint32_t I2SCFGR;
+	__IO uint32_t I2SPR;
+} SPI_TypeDef;
 
 // TODO: TypeDef SDIO
 
@@ -340,7 +350,10 @@ typedef struct {
 #define USART2	((USART_TypeDef*)USART2_BASE_ADDR)
 #define USART6	((USART_TypeDef*)USART6_BASE_ADDR)
 
-// TODO: TypeDef Macro SPI
+#define SPI1	((SPI_TypeDef*)SPI1_BASE_ADDR)
+#define SPI2	((SPI_TypeDef*)SPI2_BASE_ADDR)
+#define SPI3	((SPI_TypeDef*)SPI3_BASE_ADDR)
+#define SPI4	((SPI_TypeDef*)SPI4_BASE_ADDR)
 
 // TODO: TypeDef Macro SDIO
 
