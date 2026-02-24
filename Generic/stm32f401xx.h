@@ -199,7 +199,10 @@ typedef struct {
 	__O uint32_t CR;
 } CRC_TypeDef;
 
-// TODO: TypeDef PWR
+typedef struct {
+	__IO uint32_t CR;
+	__IO uint32_t CSR;
+} PWR_TypeDef;
 
 typedef struct
 {
@@ -262,7 +265,60 @@ typedef struct
 	__IO uint32_t AFRH;
 } GPIO_TypeDef;
 
-// TODO: TypeDef DMA
+typedef struct {
+	__I uint32_t LISR;
+	__I uint32_t HISR;
+	__O uint32_t LIFCR;
+	__O uint32_t HIFCR;
+	__IO uint32_t S0CR;
+	__IO uint32_t S0NDTR;
+	__IO uint32_t S0PAR;
+	__IO uint32_t S0M0AR;
+	__IO uint32_t S0M1AR;
+	__IO uint32_t S0FCR;
+	__IO uint32_t S1CR;
+	__IO uint32_t S1NDTR;
+	__IO uint32_t S1PAR;
+	__IO uint32_t S1M0AR;
+	__IO uint32_t S1M1AR;
+	__IO uint32_t S1FCR;
+	__IO uint32_t S2CR;
+	__IO uint32_t S2NDTR;
+	__IO uint32_t S2PAR;
+	__IO uint32_t S2M0AR;
+	__IO uint32_t S2M1AR;
+	__IO uint32_t S2FCR;
+	__IO uint32_t S3CR;
+	__IO uint32_t S3NDTR;
+	__IO uint32_t S3PAR;
+	__IO uint32_t S3M0AR;
+	__IO uint32_t S3M1AR;
+	__IO uint32_t S3FCR;
+	__IO uint32_t S4CR;
+	__IO uint32_t S4NDTR;
+	__IO uint32_t S4PAR;
+	__IO uint32_t S4M0AR;
+	__IO uint32_t S4M1AR;
+	__IO uint32_t S4FCR;
+	__IO uint32_t S5CR;
+	__IO uint32_t S5NDTR;
+	__IO uint32_t S5PAR;
+	__IO uint32_t S5M0AR;
+	__IO uint32_t S5M1AR;
+	__IO uint32_t S5FCR;
+	__IO uint32_t S6CR;
+	__IO uint32_t S6NDTR;
+	__IO uint32_t S6PAR;
+	__IO uint32_t S6M0AR;
+	__IO uint32_t S6M1AR;
+	__IO uint32_t S6FCR;
+	__IO uint32_t S7CR;
+	__IO uint32_t S7NDTR;
+	__IO uint32_t S7PAR;
+	__IO uint32_t S7M0AR;
+	__IO uint32_t S7M1AR;
+	__IO uint32_t S7FCR;
+} DMA_TypeDef;
 
 typedef struct
 {
@@ -284,7 +340,42 @@ typedef struct
 
 // TODO: TypeDef RTC
 
-// TODO: TypeDef I2C
+typedef struct {
+	__IO uint32_t TR;
+	__IO uint32_t DR;
+	__IO uint32_t CR;
+	__IO uint32_t ISR;
+	__IO uint32_t PRER;
+	__IO uint32_t WUTR;
+	__IO uint32_t CALIBR;
+	__IO uint32_t ALRMAR;
+	__IO uint32_t ALRMBR;
+	__O uint32_t WPR;
+	__I uint32_t SSR;
+	__IO uint32_t SHIFTR;
+	__I uint32_t TSTR;
+	__I uint32_t TSDR;
+	__I uint32_t TSSSR;
+	__IO uint32_t CALR;
+	__IO uint32_t TAFCR;
+	__IO uint32_t ALRMASSR;
+	__IO uint32_t ALRMBSSR;
+	 uint32_t res0;
+	__IO uint32_t BKPxR[20];
+} RTC_TypeDef;
+
+typedef struct {
+	__IO uint32_t CR1;
+	__IO uint32_t CR2;
+	__IO uint32_t OAR1;
+	__IO uint32_t OAR2;
+	__IO uint32_t DR;
+	__IO uint32_t SR1;
+	__I uint32_t SR2;
+	__IO uint32_t CCR;
+	__IO uint32_t TRISE;
+	__IO uint32_t FLTR;
+} I2C_TypeDef;
 
 typedef struct {
 	__IO uint32_t SR;
@@ -316,7 +407,7 @@ typedef struct {
 
 #define CRC				((CRC_TypeDef*)CRC_BASE_ADDR)
 
-// TODO: TypeDef Macro PWR
+#define PWR				((PWR_TypeDef*)PWR_BASE_ADDR)
 
 #define RCC				((RCC_TypeDef*)RCC_BASE_ADDR)
 
@@ -329,10 +420,11 @@ typedef struct {
 #define GPIOE				((GPIO_TypeDef*)GPIOE_BASE_ADDR)
 #define GPIOH				((GPIO_TypeDef*)GPIOH_BASE_ADDR)
 
-// TODO: TypeDef Macro DMA
+#define DMA1				((DMA_TypeDef*)DMA1_BASE_ADDR)
+#define DMA2				((DMA_TypeDef*)DMA2_BASE_ADDR)
 
-#define NVIC ((NVIC_Type*)NVIC_BASE_ADDR)
-#define EXTI ((EXTI_Type*)EXTI_BASE_ADDR)
+#define NVIC				((NVIC_Type*)NVIC_BASE_ADDR)
+#define EXTI				((EXTI_Type*)EXTI_BASE_ADDR)
 
 // TODO: TypeDef Macro ADC
 
@@ -344,16 +436,18 @@ typedef struct {
 
 // TODO: TypeDef Macro RTC
 
-// TODO: TypeDef Macro I2C
+#define I2C1				((I2C_TypeDef*)I2C1_BASE_ADDR)
+#define I2C2				((I2C_TypeDef*)I2C2_BASE_ADDR)
+#define I2C3				((I2C_TypeDef*)I2C3_BASE_ADDR)
 
-#define USART1	((USART_TypeDef*)USART1_BASE_ADDR)
-#define USART2	((USART_TypeDef*)USART2_BASE_ADDR)
-#define USART6	((USART_TypeDef*)USART6_BASE_ADDR)
+#define USART1				((USART_TypeDef*)USART1_BASE_ADDR)
+#define USART2				((USART_TypeDef*)USART2_BASE_ADDR)
+#define USART6				((USART_TypeDef*)USART6_BASE_ADDR)
 
-#define SPI1	((SPI_TypeDef*)SPI1_BASE_ADDR)
-#define SPI2	((SPI_TypeDef*)SPI2_BASE_ADDR)
-#define SPI3	((SPI_TypeDef*)SPI3_BASE_ADDR)
-#define SPI4	((SPI_TypeDef*)SPI4_BASE_ADDR)
+#define SPI1				((SPI_TypeDef*)SPI1_BASE_ADDR)
+#define SPI2				((SPI_TypeDef*)SPI2_BASE_ADDR)
+#define SPI3				((SPI_TypeDef*)SPI3_BASE_ADDR)
+#define SPI4				((SPI_TypeDef*)SPI4_BASE_ADDR)
 
 // TODO: TypeDef Macro SDIO
 
