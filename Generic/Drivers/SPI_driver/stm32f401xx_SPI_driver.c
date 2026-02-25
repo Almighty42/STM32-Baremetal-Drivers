@@ -191,14 +191,36 @@ SPI_status_t SPI_init(SPI_Handle_t* p_SPI_handle)
  *
  * @brief			- Resets a SPI peripheral
  *
- * @param[*p_USART_x]		- Base address of the SPI peripheral
+ * @param[*p_SPI_x]		- Base address of the SPI peripheral
  *
  * @return			- Success / Failure status of the function
  *
  * @Note			- None
  *******************************************************************************/
 
-SPI_status_t SPI_de_init(SPI_TypeDef* p_SPI_x);
+SPI_status_t SPI_de_init(SPI_TypeDef* p_SPI_x)
+{
+	SPI_status_t status = SPI_ERROR_INVALID_PORT;
+
+	if (p_SPI_x == SPI1) {
+		SPI1_REG_RESET();
+		status = SPI_OK;
+	}
+	else if (p_SPI_x == SPI2) {
+		SPI2_REG_RESET();
+		status = SPI_OK;
+	}
+	else if (p_SPI_x == SPI3) {
+		SPI3_REG_RESET();
+		status = SPI_OK;
+	}
+	else if (p_SPI_x == SPI4) {
+		SPI4_REG_RESET();
+		status = SPI_OK;
+	}
+
+	return status;
+}
 
 // NOTE: @DATA_SEND_RECEIVE_POLLING_INTERRUPT
 

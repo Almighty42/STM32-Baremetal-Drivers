@@ -5,7 +5,7 @@
 
 // NOTE: --- Structures for SPI ---
 
-// Configuration structure for a SPI
+// Configuration structure for SPI
 
 typedef struct
 {
@@ -18,7 +18,7 @@ typedef struct
 	uint8_t SPI_SSM;						// Possible values from @SPI_SSM
 } SPI_Config_t;
 
-// Handle structure for a GPIO pin
+// Handle structure for SPI
 
 typedef struct
 {

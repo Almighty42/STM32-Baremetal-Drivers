@@ -657,7 +657,7 @@ static void USART_clear_error_flags(USART_TypeDef* p_USART_x)
 	(void)tmp;
 }
 
-// NOTE: IRQ_CONFIGURATION_AND_ISR_HANDLING
+// NOTE: @IRQ_CONFIGURATION_AND_ISR_HANDLING
 
 /********************************************************************************
  * @fn				- USART_irq_interrupt_config

@@ -436,6 +436,7 @@ typedef struct {
 
 // TODO: TypeDef Macro RTC
 
+
 #define I2C1				((I2C_TypeDef*)I2C1_BASE_ADDR)
 #define I2C2				((I2C_TypeDef*)I2C2_BASE_ADDR)
 #define I2C3				((I2C_TypeDef*)I2C3_BASE_ADDR)
@@ -522,9 +523,32 @@ typedef struct {
 
 // Macros for reseting USARTx peripherals
 
-#define USART1_REG_RESET()	do{SET_BIT(RCC->APB2ENR, 4); CLEAR_BIT(RCC->APB2ENR, 4);} while(0)
-#define USART2_REG_RESET()	do{SET_BIT(RCC->APB1ENR, 17); CLEAR_BIT(RCC->APB1ENR, 17);} while(0)
-#define USART6_REG_RESET()	do{SET_BIT(RCC->APB2ENR, 5); CLEAR_BIT(RCC->APB2ENR, 5);} while(0)
+#define USART1_PER_RESET()	do{SET_BIT(RCC->APB2RSTR, 4); CLEAR_BIT(RCC->APB2RSTR, 4);} while(0)
+#define USART1_CLK_DISABLE()	do{SET_BIT(RCC->APB2ENR, 4); CLEAR_BIT(RCC->APB2ENR, 4);} while(0)
+#define USART2_PER_RESET()	do{SET_BIT(RCC->APB1RSTR, 17); CLEAR_BIT(RCC->APB1RSTR, 17);} while(0)
+#define USART2_CLK_DISABLE()	do{SET_BIT(RCC->APB1ENR, 17); CLEAR_BIT(RCC->APB1ENR, 17);} while(0)
+#define USART6_PER_RESET()	do{SET_BIT(RCC->APB2RSTR, 5); CLEAR_BIT(RCC->APB2RSTR, 5);} while(0)
+#define USART6_CLK_DISABLE()	do{SET_BIT(RCC->APB2ENR, 5); CLEAR_BIT(RCC->APB2ENR, 5);} while(0)
+
+// Macros for reseting SPIx peripherals
+
+#define SPI1_PER_RESET()	do{SET_BIT(RCC->APB2RSTR, 12); CLEAR_BIT(RCC->APB2RSTR, 12);} while(0)
+#define SPI1_CLK_DISABLE()	do{SET_BIT(RCC->APB2ENR, 12); CLEAR_BIT(RCC->APB2ENR, 12);} while(0)
+#define SPI2_PER_RESET()	do{SET_BIT(RCC->APB1RSTR, 14); CLEAR_BIT(RCC->APB1RSTR, 14);} while(0)
+#define SPI2_CLK_DISABLE()	do{SET_BIT(RCC->APB1ENR, 17); CLEAR_BIT(RCC->APB1ENR, 17);} while(0)
+#define SPI3_PER_RESET()	do{SET_BIT(RCC->APB1RSTR, 15); CLEAR_BIT(RCC->APB1RSTR, 15);} while(0)
+#define SPI3_CLK_DISABLE()	do{SET_BIT(RCC->APB1ENR, 15); CLEAR_BIT(RCC->APB1ENR, 15);} while(0)
+#define SPI4_PER_RESET()	do{SET_BIT(RCC->APB2RSTR, 13); CLEAR_BIT(RCC->APB2RSTR, 13);} while(0)
+#define SPI4_CLK_DISABLE()	do{SET_BIT(RCC->APB2ENR, 13); CLEAR_BIT(RCC->APB2ENR, 13);} while(0)
+
+// Macros for reseting I2Cx peripherals
+
+#define I2C1_PER_RESET()	do{SET_BIT(RCC->APB1RSTR, 21); CLEAR_BIT(RCC->APB1RSTR, 21);} while(0)
+#define I2C1_CLK_DISABLE()	do{SET_BIT(RCC->APB1ENR, 21); CLEAR_BIT(RCC->APB1ENR, 21);} while(0)
+#define I2C2_PER_RESET()	do{SET_BIT(RCC->APB1RSTR, 22); CLEAR_BIT(RCC->APB1RSTR, 22);} while(0)
+#define I2C2_CLK_DISABLE()	do{SET_BIT(RCC->APB1ENR, 22); CLEAR_BIT(RCC->APB1ENR, 22);} while(0)
+#define I2C3_PER_RESET()	do{SET_BIT(RCC->APB1RSTR, 23); CLEAR_BIT(RCC->APB1RSTR, 23);} while(0)
+#define I2C3_CLK_DISABLE()	do{SET_BIT(RCC->APB1ENR, 23); CLEAR_BIT(RCC->APB1ENR, 23);} while(0)
 
 // NOTE: --- Miscellaneous macros ---
 

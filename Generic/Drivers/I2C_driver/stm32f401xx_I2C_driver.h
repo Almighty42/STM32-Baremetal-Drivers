@@ -5,54 +5,90 @@
 
 // NOTE: --- Structures for I2C ---
 
-// Configuration structure for a SPI
+// Configuration structure for I2C 
 
-// typedef struct
-// {
-// 	uint8_t SPI_Device_Mode;					// Possible values from @SPI_DEVICE_MODE
-// 	uint8_t SPI_Bus_Config;						// Possible values from @SPI_BUS_CONFIG
-// 	uint8_t SPI_SCLK_Speed;						// Possible values from @SPI_SCLK_SPEED
-// 	uint8_t SPI_DFF;						// Possible values from @SPI_DFF
-// 	uint8_t SPI_CPOL;						// Possible values from @SPI_CPOL
-// 	uint8_t SPI_CPHA;						// Possible values from @SPI_CPHA
-// 	uint8_t SPI_SSM;						// Possible values from @SPI_SSM
-// } SPI_Config_t;
+typedef struct {
+        uint8_t I2C_SCL_Speed;                                          // Possible values from @I2C_SCL_SPEED
+        uint8_t I2C_Device_Address;                                     // Possible values provided by the programmer
+        uint8_t I2C_ACK_Control;                                        // Possible values from @I2C_ACK_CONTROL
+        uint8_t I2C_FM_Duty_Cycle;                                      // Possible values from @I2C_FM_DUTY_CYCLE
+} I2C_Config_t;
 
-// Handle structure for a GPIO pin
+// Handle structure for I2C
 
-// typedef struct
-// {
-// 	SPI_TypeDef* p_SPIx;						// Holds the base address of the SPI peripheral 
-// 	SPI_Config_t SPI_Config;					// Holds SPI peripheral configuration settings
-// } SPI_Handle_t;
+typedef struct {
+        I2C_TypeDef* p_I2Cx;                                            // Holds the base address of the I2C peripheral 
+        I2C_Config_t I2C_Config;                                        // Holds I2C peripheral configuration settings
+} I2C_Handle_t;
+
+typedef enum {
+	I2C_APP_EVENT = 0                                                  // NOTE: TEMPORARY
+} I2C_AppEvent_t;
 
 // Function return status
 
-// typedef enum {
-// 	SPI_OK = 0,							// Success
-// 	SPI_ERROR_INVALID_STATE,					// Invalid state of a argument
-// 	SPI_ERROR_NULL_PTR,						// NULL pointer passed
-// 	SPI_ERROR_INVALID_PORT,						// Invalid SPI port address
-// 	SPI_ERROR_INVALID_IRQ,						// Invalid IRQ number
-// 	SPI_ERROR_INVALID_MODE,						// Mode value out of range
-// 	SPI_ERROR_INVALID_BUS_CONFIG,					// Bus config value out of range
-// 	SPI_ERROR_INVALID_SCLK_SPEED,					// SCLK speed value out of range
-// 	SPI_ERROR_INVALID_DFF,						// DFF value out of range
-// 	SPI_ERROR_INVALID_CPOL,						// CPOL value out of range
-// 	SPI_ERROR_INVALID_CPHA,						// CPHA value out of range
-// 	SPI_ERROR_INVALID_SSM,						// SSM value out of range
-// 	SPI_ERROR_TIMEOUT,						// SPI polling timeout
-// 	SPI_BUSY							// SPI Tx / Rx busy
-// } SPI_status_t;
+typedef enum {
+	I2C_OK = 0,							// Success
+	I2C_ERROR_INVALID_STATE,					// Invalid state of a argument
+	I2C_ERROR_NULL_PTR,						// NULL pointer passed
+	I2C_ERROR_INVALID_PORT,						// Invalid I2C port address
+	I2C_ERROR_INVALID_IRQ,						// Invalid IRQ number
+	I2C_BUSY							// I2C Tx / Rx busy
+} I2C_status_t;
 
-// NOTE: --- SPI Validation macros ---
+// USAGE: --- @I2C_SCL_SPEED ---
 
-// #define VALIDATE_SPI_PORT(port)		do { \
-// 							if ((port) == NULL || \
-// 							!((port) == SPI1 || (port) == SPI2 || (port) == SPI3 || (port) == SPI4)) { \
-// 								return SPI_ERROR_INVALID_PORT; \
-// 							} \
-// 						} while(0)
+#define I2C_SCL_SPEED_SM                        100000
+#define I2C_SCL_SPEED_FM4K                      400000
+#define I2C_SCL_SPEED_FM2K                      200000
+
+
+// USAGE: --- @I2C_ACK_CONTROL ---
+
+#define I2C_ACK_CONTROL_ENABLE                  1
+#define I2C_ACK_CONTROL_DISABLE                 0
+
+// USAGE: --- @I2C_FM_DUTY_CYCLE ---
+
+#define I2C_FM_DUTY_CYCLE_16_9                  1
+#define I2C_FM_DUTY_CYCLE_2                     0
+
+// NOTE: --- I2C Flags ( CR1 ) ---
+
+#define I2C_CR1_FLAG_SMB_ALERT			15
+#define I2C_CR1_FLAG_TIMEOUT			14
+#define I2C_CR1_FLAG_PEC_ERR			12
+#define I2C_CR1_FLAG_OVR			11
+#define I2C_CR1_FLAG_AF				10
+#define I2C_CR1_FLAG_ARLO			9
+#define I2C_CR1_FLAG_BERR			8
+#define I2C_CR1_FLAG_TXE			7
+#define I2C_CR1_FLAG_RXNE			6
+#define I2C_CR1_FLAG_STOPF			4
+#define I2C_CR1_FLAG_ADD10			3
+#define I2C_CR1_FLAG_BTF			2
+#define I2C_CR1_FLAG_ADDR			1
+#define I2C_CR1_FLAG_SB				0
+
+// NOTE: --- I2C Flags ( CR2 ) ---
+
+#define I2C_CR2_FLAG_PEC			8
+#define I2C_CR2_FLAG_DUALF			7
+#define I2C_CR2_FLAG_SMB_HOST			6
+#define I2C_CR2_FLAG_SMBDE_FAULT		5
+#define I2C_CR2_FLAG_GENCALL			4
+#define I2C_CR2_FLAG_TRA			2
+#define I2C_CR2_FLAG_BUSY			1
+#define I2C_CR2_FLAG_MSL			0
+
+// NOTE: --- I2C Validation macros ---
+
+#define VALIDATE_I2C_PORT(port)		do { \
+							if ((port) == NULL || \
+							!((port) == I2C1 || (port) == I2C2 || (port) == I2C3)) { \
+								return I2C_ERROR_INVALID_PORT; \
+							} \
+						} while(0)
 
 // #define VALIDATE_SPI_DEVICE_MODE(mode)		VALIDATE_ENUM((mode), SPI_DEVICE_MODE_MASTER, SPI_ERROR_INVALID_MODE)
 // #define VALIDATE_SPI_BUS_CONFIG(stop)		VALIDATE_ENUM((stop), SPI_BUS_CONFIG_FD, SPI_ERROR_INVALID_BUS_CONFIG)
@@ -116,24 +152,37 @@
 #define I2C_CR2_ITERREN				8
 #define I2C_CR2_FREQ				0
 
+// NOTE: --- Bit position definitions I2C_OAR1 ---
+
+#define I2C_OAR1_ADD_MODE                       15
+#define I2C_OAR1_ADD8                           8
+#define I2C_OAR1_ADD1                           1
+#define I2C_OAR1_ADD0                           0
+
+// NOTE: --- Bit position definitions I2C_CCR ---
+
+#define I2C_CCR_FS                              15
+#define I2C_CCR_DUTY                            14
+#define I2C_CCR_CCR                             0
+
 // Peripheral clock setup
-// SPI_status_t SPI_peri_clk_control(SPI_TypeDef* p_SPI_x, uint8_t EN_or_DI);
+I2C_status_t I2C_peri_clk_control(I2C_TypeDef* p_I2C_x, uint8_t EN_or_DI);
 
 // Init / de-init
-// SPI_status_t SPI_init(SPI_Handle_t *p_SPI_handle);
-// SPI_status_t SPI_de_init(SPI_TypeDef* p_SPI_x);
+I2C_status_t I2C_init(I2C_Handle_t *p_I2C_handle);
+I2C_status_t I2C_de_init(I2C_TypeDef* p_I2C_x);
 
 // Data send / receive ( polling / interrupt ) 
-// SPI_status_t SPI_write_data_pl(SPI_Handle_t* p_SPI_handle, const uint8_t* p_tx_buffer, uint32_t len);
-// SPI_status_t SPI_read_data_pl(SPI_Handle_t* p_SPI_handle, uint8_t* p_rx_buffer, uint32_t len);
-// SPI_status_t SPI_write_data_it(SPI_Handle_t *p_SPI_handle,uint8_t *p_tx_buffer, uint32_t len);
-// SPI_status_t SPI_read_data_it(SPI_Handle_t *p_SPI_handle, uint8_t *p_rx_buffer, uint32_t len);
 
 // Peripheral control API
+I2C_status_t I2C_peri_control(I2C_TypeDef* p_I2C_x, uint8_t EN_or_DI);
+uint8_t I2C_get_flag_status(I2C_TypeDef* p_I2C_x, uint8_t status_flag_name);
 
 // IRQ configuration and ISR handling
-// SPI_status_t SPI_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);
-// SPI_status_t SPI_irq_priority_config(uint8_t irq_n, uint32_t irq_prio);
-// void SPI_irq_handling(SPI_Handle_t *p_SPI_handle);
+I2C_status_t I2C_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);
+I2C_status_t I2C_irq_priority_config(uint8_t irq_n, uint32_t irq_prio);
+
+// Application callback
+void I2C_application_event_callback(I2C_Handle_t *p_I2C_handle,I2C_AppEvent_t app_ev);
 
 #endif
