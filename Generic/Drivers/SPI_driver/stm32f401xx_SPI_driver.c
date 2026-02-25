@@ -203,19 +203,23 @@ SPI_status_t SPI_de_init(SPI_TypeDef* p_SPI_x)
 	SPI_status_t status = SPI_ERROR_INVALID_PORT;
 
 	if (p_SPI_x == SPI1) {
-		SPI1_REG_RESET();
+		SPI1_PER_RESET();
+		SPI1_CLK_DISABLE();
 		status = SPI_OK;
 	}
 	else if (p_SPI_x == SPI2) {
-		SPI2_REG_RESET();
+		SPI2_PER_RESET();
+		SPI2_CLK_DISABLE();
 		status = SPI_OK;
 	}
 	else if (p_SPI_x == SPI3) {
-		SPI3_REG_RESET();
+		SPI3_PER_RESET();
+		SPI3_CLK_DISABLE();
 		status = SPI_OK;
 	}
 	else if (p_SPI_x == SPI4) {
-		SPI4_REG_RESET();
+		SPI4_PER_RESET();
+		SPI4_CLK_DISABLE();
 		status = SPI_OK;
 	}
 
@@ -329,7 +333,31 @@ SPI_status_t SPI_read_data_it(SPI_Handle_t* p_SPI_handle, uint8_t* p_rx_buffer,
  * @Note			- None
  *******************************************************************************/
 
-SPI_status_t SPI_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);
+SPI_status_t SPI_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI)
+{
+	VALIDATE_EN_DI(EN_or_DI, SPI_ERROR_INVALID_STATE);
+
+	VALIDATE_IRQ_NUMBER(irq_n, SPI_ERROR_INVALID_IRQ);
+
+	if (EN_or_DI == ENABLE) {
+		if (irq_n < 32)
+			SET_BIT(NVIC->ISER[0], irq_n);
+		else if (irq_n >= 32 && irq_n < 64)
+			SET_BIT(NVIC->ISER[1], (irq_n % 32));
+		else if (irq_n >= 64 && irq_n < 96)
+			SET_BIT(NVIC->ISER[2], (irq_n % 64));
+	}
+	else {
+		if (irq_n < 32)
+			SET_BIT(NVIC->ICER[0], irq_n);
+		else if (irq_n >= 32 && irq_n < 64)
+			SET_BIT(NVIC->ICER[1], (irq_n % 32));
+		else if (irq_n >= 64 && irq_n < 96)
+			SET_BIT(NVIC->ICER[2], (irq_n % 64));
+	}
+
+	return SPI_OK;
+}
 
 /********************************************************************************
  * @fn				- SPI_irq_priority_config
@@ -344,7 +372,21 @@ SPI_status_t SPI_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);
  * @Note			- None
  *******************************************************************************/
 
-SPI_status_t SPI_irq_priority_config(uint8_t irq_n, uint32_t irq_prio);
+SPI_status_t SPI_irq_priority_config(uint8_t irq_n, uint32_t irq_prio)
+{
+	VALIDATE_IRQ_NUMBER(irq_n, SPI_ERROR_INVALID_IRQ);
+
+	uint8_t ipr_x = irq_n / 4;
+	uint8_t ipr_x_section = (irq_n % 4) * 8;
+	uint32_t prio_field = (irq_prio & ((1U << __NVIC_PRIO_BITS) - 1U))
+	                      << (8U - __NVIC_PRIO_BITS);
+	uint32_t ipr = NVIC->IPR[ipr_x];
+	CLEAR_BYTE(ipr, ipr_x_section);
+	ipr |= (prio_field << ipr_x_section);
+	NVIC->IPR[ipr_x] = ipr;
+
+	return SPI_OK;
+}
 
 /********************************************************************************
  * @fn				- SPI_irq_handling

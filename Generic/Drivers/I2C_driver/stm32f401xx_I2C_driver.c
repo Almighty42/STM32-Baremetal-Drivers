@@ -85,6 +85,42 @@ I2C_status_t I2C_peri_clk_control(I2C_TypeDef* p_I2C_x, uint8_t EN_or_DI)
 
 I2C_status_t I2C_init(I2C_Handle_t* p_I2C_handle)
 {
+	VALIDATE_PTR(p_I2C_handle, I2C_ERROR_NULL_PTR);
+
+	I2C_TypeDef* port = p_I2C_handle->p_I2Cx;
+	VALIDATE_I2C_PORT(port);
+
+	volatile uint32_t* cr1 = &p_I2C_handle->p_I2Cx->CR1;
+	volatile uint32_t* cr2 = &p_I2C_handle->p_I2Cx->CR2;
+
+	// Clock
+	I2C_peri_clk_control(port, ENABLE);
+
+	// Mode
+
+	// Speed
+	uint8_t speed = p_I2C_handle->I2C_Config.I2C_SCL_Speed;
+
+	// TODO:
+	// 1. Configure the mode in CCR register
+	// 2. Program FREQ field of CR2
+	// 3. Calculate and program CCR value
+
+	// Device address
+
+	// ACKing
+	uint8_t ack = p_I2C_handle->I2C_Config.I2C_ACK_Control;
+
+	VALIDATE_I2C_ACK_CONTROL(ack);
+
+	if (ack == I2C_ACK_CONTROL_ENABLE)
+		SET_BIT(*cr1, I2C_CR1_ACK);
+	else if (ack == I2C_ACK_CONTROL_DISABLE)
+		CLEAR_BIT(*cr1, I2C_CR1_ACK);
+
+	// Slew rate
+
+	return I2C_OK;
 }
 
 /********************************************************************************
@@ -104,15 +140,18 @@ I2C_status_t I2C_de_init(I2C_TypeDef* p_I2C_x)
 	I2C_status_t status = I2C_ERROR_INVALID_PORT;
 
 	if (p_I2C_x == I2C1) {
-		I2C1_REG_RESET();
+		I2C1_PER_RESET();
+		I2C1_CLK_DISABLE();
 		status = I2C_OK;
 	}
 	else if (p_I2C_x == I2C2) {
-		I2C2_REG_RESET();
+		I2C2_PER_RESET();
+		I2C2_CLK_DISABLE();
 		status = I2C_OK;
 	}
 	else if (p_I2C_x == I2C3) {
-		I2C3_REG_RESET();
+		I2C3_PER_RESET();
+		I2C3_CLK_DISABLE();
 		status = I2C_OK;
 	}
 

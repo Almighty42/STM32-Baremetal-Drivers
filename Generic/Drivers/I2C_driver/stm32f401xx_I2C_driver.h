@@ -8,7 +8,7 @@
 // Configuration structure for I2C 
 
 typedef struct {
-        uint8_t I2C_SCL_Speed;                                          // Possible values from @I2C_SCL_SPEED
+        uint16_t I2C_SCL_Speed;                                         // Possible values from @I2C_SCL_SPEED
         uint8_t I2C_Device_Address;                                     // Possible values provided by the programmer
         uint8_t I2C_ACK_Control;                                        // Possible values from @I2C_ACK_CONTROL
         uint8_t I2C_FM_Duty_Cycle;                                      // Possible values from @I2C_FM_DUTY_CYCLE
@@ -33,6 +33,9 @@ typedef enum {
 	I2C_ERROR_NULL_PTR,						// NULL pointer passed
 	I2C_ERROR_INVALID_PORT,						// Invalid I2C port address
 	I2C_ERROR_INVALID_IRQ,						// Invalid IRQ number
+	I2C_ERROR_INVALID_SCL_SPEED,					// SCL speed value out of range 
+	I2C_ERROR_INVALID_ACK_CONTROL,					// ACK control value out of range 
+	I2C_ERROR_INVALID_FM_DUTY_CYCLE,				// FM duty cycle value out of range 
 	I2C_BUSY							// I2C Tx / Rx busy
 } I2C_status_t;
 
@@ -90,13 +93,9 @@ typedef enum {
 							} \
 						} while(0)
 
-// #define VALIDATE_SPI_DEVICE_MODE(mode)		VALIDATE_ENUM((mode), SPI_DEVICE_MODE_MASTER, SPI_ERROR_INVALID_MODE)
-// #define VALIDATE_SPI_BUS_CONFIG(stop)		VALIDATE_ENUM((stop), SPI_BUS_CONFIG_FD, SPI_ERROR_INVALID_BUS_CONFIG)
-// #define VALIDATE_SPI_SCLK_SPEED(wlen)		VALIDATE_ENUM((wlen), SPI_SCLK_SPEED_DIV_2, SPI_ERROR_INVALID_SCLK_SPEED)
-// #define VALIDATE_SPI_DFF(parity)		VALIDATE_ENUM((parity), SPI_DFF_8BIT, SPI_ERROR_INVALID_DFF)
-// #define VALIDATE_SPI_CPOL(flow)			VALIDATE_ENUM((flow), SPI_CPOL_HIGH, SPI_ERROR_INVALID_CPOL)
-// #define VALIDATE_SPI_CPHA(flow)			VALIDATE_ENUM((flow), SPI_CPHA_HIGH, SPI_ERROR_INVALID_CPHA)
-// #define VALIDATE_SPI_SSM(flow)			VALIDATE_ENUM((flow), SPI_SSM_HW, SPI_ERROR_INVALID_SSM)
+#define VALIDATE_I2C_SCL_SPEED(data)		VALIDATE_ENUM((data), I2C_SCL_SPEED_FM4K, I2C_ERROR_INVALID_SCL_SPEED)
+#define VALIDATE_I2C_ACK_CONTROL(data)		VALIDATE_ENUM((data), I2C_ACK_CONTROL_ENABLE, I2C_ERROR_INVALID_ACK_CONTROL)
+#define VALIDATE_I2C_FM_DUTY_CYCLE(data)	VALIDATE_ENUM((data), I2C_FM_DUTY_CYCLE_16_9, I2C_ERROR_INVALID_FM_DUTY_CYCLE)
 
 // NOTE: --- Bit position definitions I2C_SR1 ---
 

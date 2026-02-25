@@ -107,6 +107,8 @@ GPIO_status_t GPIO_init(GPIO_Handle_t* p_GPIO_handle)
 	if (pin_n > 15U)
 		return GPIO_ERROR_INVALID_PIN;
 
+	GPIO_peri_clk_control(port, ENABLE);
+
 	// Mode
 	uint8_t mode = p_GPIO_handle->GPIO_Pin_Config.GPIO_Pin_Mode;
 	if (mode > GPIO_MODE_IT_RFT)
@@ -217,27 +219,33 @@ GPIO_status_t GPIO_de_init(GPIO_TypeDef* p_GPIOx)
 	GPIO_status_t status = GPIO_ERROR_INVALID_PORT;
 
 	if (p_GPIOx == GPIOA) {
-		GPIOA_REG_RESET();
+		GPIOA_PER_RESET();
+		GPIOA_CLK_DISABLE();
 		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOB) {
-		GPIOB_REG_RESET();
+		GPIOB_PER_RESET();
+		GPIOB_CLK_DISABLE();
 		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOC) {
-		GPIOC_REG_RESET();
+		GPIOC_PER_RESET();
+		GPIOC_CLK_DISABLE();
 		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOD) {
-		GPIOD_REG_RESET();
+		GPIOD_PER_RESET();
+		GPIOD_CLK_DISABLE();
 		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOE) {
-		GPIOE_REG_RESET();
+		GPIOE_PER_RESET();
+		GPIOE_CLK_DISABLE();
 		status = GPIO_OK;
 	}
 	else if (p_GPIOx == GPIOH) {
-		GPIOH_REG_RESET();
+		GPIOH_PER_RESET();
+		GPIOH_CLK_DISABLE();
 		status = GPIO_OK;
 	}
 
