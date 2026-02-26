@@ -8,7 +8,7 @@
 // Configuration structure for I2C 
 
 typedef struct {
-        uint16_t I2C_SCL_Speed;                                         // Possible values from @I2C_SCL_SPEED
+        uint32_t I2C_SCL_Speed;                                         // Possible values from @I2C_SCL_SPEED
         uint8_t I2C_Device_Address;                                     // Possible values provided by the programmer
         uint8_t I2C_ACK_Control;                                        // Possible values from @I2C_ACK_CONTROL
         uint8_t I2C_FM_Duty_Cycle;                                      // Possible values from @I2C_FM_DUTY_CYCLE

@@ -10,7 +10,7 @@
 #define USART_TX_BUFFER_SIZE			128
 #define USART_RX_BUFFER_SIZE			128
 
-// Configuration structure for a GPIO pin
+// Configuration structure for a USART
 
 typedef struct {
 	uint16_t buffer[USART_TX_BUFFER_SIZE];				// Transmit ring buffer
@@ -33,7 +33,7 @@ typedef struct {
 	uint8_t USART_hw_flow_control;					// Possible values from @USART_HW_FLOW_CONTROL
 } USART_Pin_Config_t;
 
-// Handle structure for a GPIO pin
+// Handle structure for USART
 // NOTE: Does NOT support DMA
 typedef struct {
 	USART_TypeDef *p_USARTx;					// Holds the base address of the USART peripheral 

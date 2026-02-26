@@ -229,15 +229,18 @@ USART_status_t USART_de_init(USART_TypeDef* p_USART_x)
 	USART_status_t status = USART_ERROR_INVALID_PORT;
 
 	if (p_USART_x == USART1) {
-		USART1_REG_RESET();
+		USART1_PER_RESET();
+		USART1_CLK_DISABLE();
 		status = USART_OK;
 	}
 	else if (p_USART_x == USART2) {
-		USART2_REG_RESET();
+		USART2_PER_RESET();
+		USART2_CLK_DISABLE();
 		status = USART_OK;
 	}
 	else if (p_USART_x == USART6) {
-		USART6_REG_RESET();
+		USART6_PER_RESET();
+		USART6_CLK_DISABLE();
 		status = USART_OK;
 	}
 
@@ -657,7 +660,7 @@ static void USART_clear_error_flags(USART_TypeDef* p_USART_x)
 	(void)tmp;
 }
 
-// NOTE: IRQ_CONFIGURATION_AND_ISR_HANDLING
+// NOTE: @IRQ_CONFIGURATION_AND_ISR_HANDLING
 
 /********************************************************************************
  * @fn				- USART_irq_interrupt_config

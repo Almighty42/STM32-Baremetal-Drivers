@@ -1,5 +1,6 @@
 #include "stm32f401xx_I2C_driver.h"
 #include "stm32f401xx.h"
+#include "stm32f401xx_RCC_driver.h"
 
 /********************************************************************************
  *
@@ -92,21 +93,48 @@ I2C_status_t I2C_init(I2C_Handle_t* p_I2C_handle)
 
 	volatile uint32_t* cr1 = &p_I2C_handle->p_I2Cx->CR1;
 	volatile uint32_t* cr2 = &p_I2C_handle->p_I2Cx->CR2;
+	volatile uint32_t* oar1 = &p_I2C_handle->p_I2Cx->OAR1;
+	volatile uint32_t* ccr = &p_I2C_handle->p_I2Cx->CCR;
 
 	// Clock
 	I2C_peri_clk_control(port, ENABLE);
 
-	// Mode
-
 	// Speed
 	uint8_t speed = p_I2C_handle->I2C_Config.I2C_SCL_Speed;
 
-	// TODO:
-	// 1. Configure the mode in CCR register
-	// 2. Program FREQ field of CR2
-	// 3. Calculate and program CCR value
+	uint16_t ccr_val = 0;
+	if (speed <= I2C_SCL_SPEED_SM) {
+		CLEAR_BIT(*ccr, I2C_CCR_FS);
+		ccr_val = RCC_get_pclk_1_val() / (2 * speed);
+		ccr_val &= 0xFFF;
+		SET_BITS_BY_VAR(*ccr, ccr_val);
+	}
+	else if (speed <= I2C_SCL_SPEED_FM2K || speed <= I2C_SCL_SPEED_FM4K) {
+		SET_BIT(*ccr, I2C_CCR_FS);
+
+		// Duty cycle
+		uint8_t duty_cycle = p_I2C_handle->I2C_Config.I2C_FM_Duty_Cycle;
+		if (duty_cycle == I2C_FM_DUTY_CYCLE_16_9) {
+			SET_BIT(*ccr, I2C_CCR_DUTY);
+			ccr_val = RCC_get_pclk_1_val() / (25 * speed);
+		}
+		else if (duty_cycle == I2C_FM_DUTY_CYCLE_2) {
+			CLEAR_BIT(*ccr, I2C_CCR_DUTY);
+			ccr_val = RCC_get_pclk_1_val() / (3 * speed);
+		}
+		ccr_val &= 0xFFF;
+		SET_BITS_BY_VAR(*ccr, ccr_val);
+	}
+
+	// Frequency
+	uint32_t freq_val = RCC_get_pclk_1_val() / 100000U;
+	SET_BITS_BY_VAR(*cr2, freq_val);
 
 	// Device address
+	SET_BITS_BY_VAR(*oar1,
+	                p_I2C_handle->I2C_Config.I2C_Device_Address << 1);
+	// Required by software
+	SET_BIT(*oar1, 14);
 
 	// ACKing
 	uint8_t ack = p_I2C_handle->I2C_Config.I2C_ACK_Control;
@@ -119,6 +147,15 @@ I2C_status_t I2C_init(I2C_Handle_t* p_I2C_handle)
 		CLEAR_BIT(*cr1, I2C_CR1_ACK);
 
 	// Slew rate
+	uint8_t trise_val;
+	volatile uint32_t* trise = &p_I2C_handle->p_I2Cx->TRISE;
+	if (speed <= I2C_SCL_SPEED_SM) {
+		trise_val = (RCC_get_pclk_1_val() / 1000000) + 1;
+	}
+	else if (speed <= I2C_SCL_SPEED_FM2K || speed <= I2C_SCL_SPEED_FM4K) {
+		trise_val = ((RCC_get_pclk_1_val() * 300) / 1000000000) + 1;
+	}
+	SET_BITS_BY_VAR(*trise, trise_val);
 
 	return I2C_OK;
 }
