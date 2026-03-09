@@ -107,15 +107,15 @@ typedef enum {
 
 // NOTE: --- Bit position definitions SPI_SR ---
 
-#define SPI_SR_FRE				8
-#define SPI_SR_BSY				7
-#define SPI_SR_OVR				6
-#define SPI_SR_MODF				5
-#define SPI_SR_CRCERR				4
-#define SPI_SR_UDR				3
-#define SPI_SR_CHSIDE				2
-#define SPI_SR_TXE				1
-#define SPI_SR_RXNE				0
+#define SPI_SR_FRE				(1U << 8)
+#define SPI_SR_BSY    				(1U << 7)
+#define SPI_SR_OVR    				(1U << 6)
+#define SPI_SR_MODF   				(1U << 5)
+#define SPI_SR_CRCERR 				(1U << 4)
+#define SPI_SR_UDR    				(1U << 3)
+#define SPI_SR_CHSIDE 				(1U << 2)
+#define SPI_SR_TXE    				(1U << 1)
+#define SPI_SR_RXNE   				(1U << 0)
 
 // NOTE: --- Bit position definitions SPI_CR1 ---
 
@@ -158,6 +158,7 @@ SPI_status_t SPI_write_data_it(SPI_Handle_t *p_SPI_handle,uint8_t *p_tx_buffer, 
 SPI_status_t SPI_read_data_it(SPI_Handle_t *p_SPI_handle, uint8_t *p_rx_buffer, uint32_t len);
 
 // Peripheral control API
+SPI_status_t SPI_peri_control(SPI_TypeDef* p_SPI_x, uint8_t EN_or_DI);
 
 // IRQ configuration and ISR handling
 SPI_status_t SPI_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);

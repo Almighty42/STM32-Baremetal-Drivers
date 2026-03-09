@@ -114,8 +114,6 @@ SPI_status_t SPI_init(SPI_Handle_t* p_SPI_handle)
 	else if (mode == SPI_DEVICE_MODE_SLAVE)
 		CLEAR_BIT(*cr1, SPI_CR1_MSTR);
 
-	// WARNING: Have to be tested might be wrong
-	// Bus config
 	uint8_t bus_config = p_SPI_handle->SPI_Config.SPI_Bus_Config;
 
 	VALIDATE_SPI_BUS_CONFIG(bus_config);
@@ -134,10 +132,51 @@ SPI_status_t SPI_init(SPI_Handle_t* p_SPI_handle)
 		CLEAR_BIT(*cr1, SPI_CR1_RXONLY);
 	}
 
-	// TODO: Speed
+	// Speed
 	uint8_t speed = p_SPI_handle->SPI_Config.SPI_SCLK_Speed;
 
 	VALIDATE_SPI_SCLK_SPEED(speed);
+
+	if (speed == SPI_SCLK_SPEED_DIV_2) {
+		CLEAR_BIT(*cr1, SPI_CR1_BR);
+		CLEAR_BIT(*cr1, (SPI_CR1_BR + 1));
+		CLEAR_BIT(*cr1, (SPI_CR1_BR + 2));
+	}
+	else if (speed == SPI_SCLK_SPEED_DIV_4) {
+		SET_BIT(*cr1, SPI_CR1_BR);
+		CLEAR_BIT(*cr1, (SPI_CR1_BR + 1));
+		CLEAR_BIT(*cr1, (SPI_CR1_BR + 2));
+	}
+	else if (speed == SPI_SCLK_SPEED_DIV_8) {
+		CLEAR_BIT(*cr1, SPI_CR1_BR);
+		SET_BIT(*cr1, (SPI_CR1_BR + 1));
+		CLEAR_BIT(*cr1, (SPI_CR1_BR + 2));
+	}
+	else if (speed == SPI_SCLK_SPEED_DIV_16) {
+		SET_BIT(*cr1, SPI_CR1_BR);
+		SET_BIT(*cr1, (SPI_CR1_BR + 1));
+		CLEAR_BIT(*cr1, (SPI_CR1_BR + 2));
+	}
+	else if (speed == SPI_SCLK_SPEED_DIV_32) {
+		CLEAR_BIT(*cr1, SPI_CR1_BR);
+		CLEAR_BIT(*cr1, (SPI_CR1_BR + 1));
+		SET_BIT(*cr1, (SPI_CR1_BR + 2));
+	}
+	else if (speed == SPI_SCLK_SPEED_DIV_64) {
+		SET_BIT(*cr1, SPI_CR1_BR);
+		CLEAR_BIT(*cr1, (SPI_CR1_BR + 1));
+		SET_BIT(*cr1, (SPI_CR1_BR + 2));
+	}
+	else if (speed == SPI_SCLK_SPEED_DIV_128) {
+		CLEAR_BIT(*cr1, SPI_CR1_BR);
+		SET_BIT(*cr1, (SPI_CR1_BR + 1));
+		SET_BIT(*cr1, (SPI_CR1_BR + 2));
+	}
+	else if (speed == SPI_SCLK_SPEED_DIV_256) {
+		SET_BIT(*cr1, SPI_CR1_BR);
+		SET_BIT(*cr1, (SPI_CR1_BR + 1));
+		SET_BIT(*cr1, (SPI_CR1_BR + 2));
+	}
 
 	// DFF
 	uint8_t dff = p_SPI_handle->SPI_Config.SPI_DFF;
@@ -167,9 +206,9 @@ SPI_status_t SPI_init(SPI_Handle_t* p_SPI_handle)
 	VALIDATE_SPI_CPHA(cpha);
 
 	CLEAR_BIT(*cr1, SPI_CR1_CPHA);
-	if (cpol == SPI_CPHA_HIGH)
+	if (cpha == SPI_CPHA_HIGH)
 		SET_BIT(*cr1, SPI_CR1_CPHA);
-	else if (cpol == SPI_CPHA_LOW)
+	else if (cpha == SPI_CPHA_LOW)
 		CLEAR_BIT(*cr1, SPI_CR1_CPHA);
 
 	// SSM
@@ -178,9 +217,11 @@ SPI_status_t SPI_init(SPI_Handle_t* p_SPI_handle)
 	VALIDATE_SPI_SSM(ssm);
 
 	CLEAR_BIT(*cr1, SPI_CR1_SSM);
-	if (cpol == SPI_SSM_SW)
+	if (ssm == SPI_SSM_SW) {
 		SET_BIT(*cr1, SPI_CR1_SSM);
-	else if (cpol == SPI_SSM_HW)
+		SET_BIT(*cr1, SPI_CR1_SSI);
+	}
+	else if (ssm == SPI_SSM_HW)
 		CLEAR_BIT(*cr1, SPI_CR1_SSM);
 
 	return SPI_OK;
@@ -245,21 +286,27 @@ SPI_status_t SPI_de_init(SPI_TypeDef* p_SPI_x)
 SPI_status_t SPI_write_data_pl(SPI_Handle_t* p_SPI_handle,
                                const uint8_t* p_tx_buffer, uint32_t len)
 {
-	while (len != 0) {
-		while (!IS_BIT_SET(p_SPI_handle->p_SPIx->SR, SPI_SR_TXE)) {
-			if (IS_BIT_SET(p_SPI_handle->p_SPIx->CR1,
-			               SPI_CR1_DFF)) {
-				p_SPI_handle->p_SPIx->DR =
-				    *((uint16_t*)p_tx_buffer);
-				len -= 2;
-				p_tx_buffer += 2;
-			}
-			else {
-				p_SPI_handle->p_SPIx->DR = *(p_tx_buffer);
-				len--;
-				p_tx_buffer++;
-			}
+	while (len > 0) {
+		// wait until TXE == 1
+		while (!(p_SPI_handle->p_SPIx->SR & SPI_SR_TXE)) {
+			// spin
 		}
+
+		if (p_SPI_handle->p_SPIx->CR1 & SPI_CR1_DFF) {
+			p_SPI_handle->p_SPIx->DR = *((uint16_t*)p_tx_buffer);
+			len -= 2;
+			p_tx_buffer += 2;
+		}
+		else {
+			p_SPI_handle->p_SPIx->DR = *p_tx_buffer;
+			len--;
+			p_tx_buffer++;
+		}
+	}
+
+	// wait until BSY == 0 (last bit shifted out)
+	while (p_SPI_handle->p_SPIx->SR & SPI_SR_BSY) {
+		// spin
 	}
 
 	return SPI_OK;
@@ -317,6 +364,35 @@ SPI_status_t SPI_read_data_it(SPI_Handle_t* p_SPI_handle, uint8_t* p_rx_buffer,
                               uint32_t len);
 
 // NOTE: @PERIPHERAL_CONTROL_API
+
+/********************************************************************************
+ * @fn				- SPI_peri_control
+ *
+ * @brief			- Sets SPI peripheral control
+ *
+ * @param[*p_SPI_x]		- Base address of the SPI peripheral
+ * @param[EN_or_DI]		- ENABLE or DISABLE macros
+ *
+ * @return			- Success / Failure status of the function
+ *
+ * @Note			- None
+ *******************************************************************************/
+
+SPI_status_t SPI_peri_control(SPI_TypeDef* p_SPI_x, uint8_t EN_or_DI)
+{
+	VALIDATE_EN_DI(EN_or_DI, SPI_ERROR_INVALID_STATE);
+
+	VALIDATE_SPI_PORT(p_SPI_x);
+
+	if (EN_or_DI == ENABLE) {
+		SET_BIT(p_SPI_x->CR1, SPI_CR1_SPE);
+	}
+	else {
+		CLEAR_BIT(p_SPI_x->CR1, SPI_CR1_SPE);
+	}
+
+	return SPI_OK;
+}
 
 // NOTE: IRQ_CONFIGURATION_AND_ISR_HANDLING
 
