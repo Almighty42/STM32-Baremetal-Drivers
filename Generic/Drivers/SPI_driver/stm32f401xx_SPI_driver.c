@@ -4,7 +4,8 @@
 /********************************************************************************
  *
  * TODO: Future plans for this driver:
- * 1. ...
+ * 1. Add helper functions to longer functions to make the code more readable
+ * 2. Implement DMA USART in future
  *
  *******************************************************************************/
 
@@ -16,6 +17,7 @@
  * @DATA_SEND_RECEIVE_POLLING_INTERRUPT
  * @PERIPHERAL_CONTROL_API
  * @IRQ_CONFIGURATION_AND_ISR_HANDLING
+ * @APPLICATION_CALLBACK
  *
  *******************************************************************************/
 
@@ -98,7 +100,6 @@ SPI_status_t SPI_init(SPI_Handle_t* p_SPI_handle)
 	VALIDATE_SPI_PORT(port);
 
 	volatile uint32_t* cr1 = &p_SPI_handle->p_SPIx->CR1;
-	volatile uint32_t* cr2 = &p_SPI_handle->p_SPIx->CR2;
 
 	// Clock
 	SPI_peri_clk_control(port, ENABLE);
@@ -286,9 +287,12 @@ SPI_status_t SPI_de_init(SPI_TypeDef* p_SPI_x)
 SPI_status_t SPI_write_data_pl(SPI_Handle_t* p_SPI_handle,
                                const uint8_t* p_tx_buffer, uint32_t len)
 {
+	VALIDATE_PTR(p_SPI_handle, SPI_ERROR_NULL_PTR);
+	VALIDATE_PTR(p_tx_buffer, SPI_ERROR_NULL_PTR);
+
 	while (len > 0) {
 		// wait until TXE == 1
-		while (!(p_SPI_handle->p_SPIx->SR & SPI_SR_TXE)) {
+		while (!(p_SPI_handle->p_SPIx->SR & SPI_SR_TXE_STATE)) {
 			// spin
 		}
 
@@ -344,7 +348,33 @@ SPI_status_t SPI_read_data_pl(SPI_Handle_t* p_SPI_handle, uint8_t* p_rx_buffer,
  *******************************************************************************/
 
 SPI_status_t SPI_write_data_it(SPI_Handle_t* p_SPI_handle, uint8_t* p_tx_buffer,
-                               uint32_t len);
+                               uint32_t len)
+{
+	VALIDATE_PTR(p_SPI_handle, SPI_ERROR_NULL_PTR);
+	VALIDATE_PTR(p_tx_buffer, SPI_ERROR_NULL_PTR);
+
+	VALIDATE_SPI_PORT(p_SPI_handle->p_SPIx);
+	VALIDATE_SPI_ENABLED(p_SPI_handle->p_SPIx);
+
+	if (len == 0U)
+		return SPI_OK;
+
+	uint8_t tx_state = p_SPI_handle->tx_busy_state;
+
+	if (tx_state != SPI_BUSY_IN_TX) {
+		p_SPI_handle->tx_len = len;
+		p_SPI_handle->p_tx_buffer = p_tx_buffer;
+		p_SPI_handle->tx_busy_state = SPI_BUSY_IN_TX;
+		p_SPI_handle->op_mode = SPI_OP_TX_ONLY;
+
+		// Enabling interrupt for TXE
+		SET_BIT(p_SPI_handle->p_SPIx->CR2, SPI_CR2_TXEIE);
+	}
+	else
+		return SPI_BUSY;
+
+	return SPI_OK;
+}
 
 /********************************************************************************
  * @fn				- SPI_read_data_it
@@ -361,7 +391,106 @@ SPI_status_t SPI_write_data_it(SPI_Handle_t* p_SPI_handle, uint8_t* p_tx_buffer,
  *******************************************************************************/
 
 SPI_status_t SPI_read_data_it(SPI_Handle_t* p_SPI_handle, uint8_t* p_rx_buffer,
-                              uint32_t len);
+                              uint32_t len)
+{
+	VALIDATE_PTR(p_SPI_handle, SPI_ERROR_NULL_PTR);
+	VALIDATE_PTR(p_rx_buffer, SPI_ERROR_NULL_PTR);
+
+	VALIDATE_SPI_PORT(p_SPI_handle->p_SPIx);
+	VALIDATE_SPI_ENABLED(p_SPI_handle->p_SPIx);
+
+	if (len == 0U)
+		return SPI_OK;
+
+	uint8_t rx_state = p_SPI_handle->rx_busy_state;
+
+	if (rx_state != SPI_BUSY_IN_RX) {
+		p_SPI_handle->rx_len = len;
+		p_SPI_handle->p_rx_buffer = p_rx_buffer;
+		p_SPI_handle->rx_busy_state = SPI_BUSY_IN_RX;
+		p_SPI_handle->op_mode = SPI_OP_RX_ONLY;
+
+		// Enabling interrupt for RXNEIE
+		SET_BIT(p_SPI_handle->p_SPIx->CR2, SPI_CR2_RXNEIE);
+	}
+	else
+		return SPI_BUSY;
+
+	return SPI_OK;
+}
+
+/********************************************************************************
+ * @fn				- SPI_transfer_data_it
+ *
+ * @brief			- Sends and receives over SPI via interrupts
+ *
+ * @param[*p_SPI_handle]	- Handle structure of a SPI peripheral
+ * @param[*p_tx_buffer]		- Transfer buffer ( pointer )
+ * @param[*p_rx_buffer]		- Receive buffer ( pointer )
+ * @param[len]			- Number of bytes to receive
+ *
+ * @return			- Success / Failure status of the function
+ *
+ * @Note			- Used for Full-duplex communication
+ *******************************************************************************/
+
+SPI_status_t SPI_transfer_data_it(SPI_Handle_t* p_SPI_handle,
+                                  uint8_t* p_tx_buffer, uint8_t* p_rx_buffer,
+                                  uint32_t len)
+{
+	VALIDATE_PTR(p_SPI_handle, SPI_ERROR_NULL_PTR);
+	// VALIDATE_PTR(p_tx_buffer, SPI_ERROR_NULL_PTR);
+	// VALIDATE_PTR(p_rx_buffer, SPI_ERROR_NULL_PTR);
+
+	VALIDATE_SPI_PORT(p_SPI_handle->p_SPIx);
+	VALIDATE_SPI_ENABLED(p_SPI_handle->p_SPIx);
+
+	if (len == 0U)
+		return SPI_OK;
+
+	uint8_t tx_state = p_SPI_handle->tx_busy_state;
+	uint8_t rx_state = p_SPI_handle->rx_busy_state;
+
+	if (tx_state != SPI_READY || rx_state != SPI_READY)
+		return SPI_BUSY;
+
+	// For DFF 16 bit, checks if number is even
+	if (p_SPI_handle->SPI_Config.SPI_DFF == SPI_DFF_16BIT && (len & 0x1))
+		return SPI_ERROR_INVALID_LEN;
+
+	p_SPI_handle->p_tx_buffer = p_tx_buffer;
+	p_SPI_handle->tx_len = len;
+	p_SPI_handle->tx_busy_state = SPI_BUSY_IN_TX;
+
+	if (p_rx_buffer) {
+		p_SPI_handle->p_rx_buffer = p_rx_buffer;
+		p_SPI_handle->rx_len = len;
+		p_SPI_handle->rx_busy_state = SPI_BUSY_IN_RX;
+
+		if (p_tx_buffer)
+			p_SPI_handle->op_mode = SPI_OP_TX_RX;
+		else
+			p_SPI_handle->op_mode = SPI_OP_RX_ONLY;
+
+		SET_BIT(p_SPI_handle->p_SPIx->CR2, SPI_CR2_RXNEIE);
+	}
+	else {
+		p_SPI_handle->p_rx_buffer = NULL;
+		p_SPI_handle->rx_len = 0;
+		p_SPI_handle->rx_busy_state = SPI_READY;
+		p_SPI_handle->op_mode = SPI_OP_TX_ONLY;
+
+		CLEAR_BIT(p_SPI_handle->p_SPIx->CR2, SPI_CR2_RXNEIE);
+	}
+
+	if (!p_tx_buffer && !p_rx_buffer)
+		return SPI_ERROR_INVALID_STATE;
+
+	// Enabling interrupt for TXE
+	SET_BIT(p_SPI_handle->p_SPIx->CR2, SPI_CR2_TXEIE);
+
+	return SPI_OK;
+}
 
 // NOTE: @PERIPHERAL_CONTROL_API
 
@@ -476,4 +605,152 @@ SPI_status_t SPI_irq_priority_config(uint8_t irq_n, uint32_t irq_prio)
  * @Note			- None
  *******************************************************************************/
 
-void SPI_irq_handling(SPI_Handle_t* p_SPI_handle);
+void SPI_irq_handling(SPI_Handle_t* p_SPI_handle)
+{
+	volatile uint32_t* sr = &p_SPI_handle->p_SPIx->SR;
+	volatile uint32_t* cr2 = &p_SPI_handle->p_SPIx->CR2;
+	volatile uint32_t* dr = &p_SPI_handle->p_SPIx->DR;
+
+	// TXE interrupt
+
+	// Check for TXE flag
+	uint32_t txe_state = IS_BIT_SET(*sr, SPI_SR_TXE_STATE);
+	// Check for TXEIE flag
+	uint32_t txeie_state = IS_BIT_SET(*cr2, SPI_CR2_TXEIE);
+
+	if (txe_state && txeie_state) {
+		if (p_SPI_handle->tx_len > 0) {
+			uint8_t dff = p_SPI_handle->SPI_Config.SPI_DFF;
+			if (p_SPI_handle->op_mode == SPI_OP_RX_ONLY) {
+				// Sending dummy data to start SCK
+				if (dff == SPI_DFF_8BIT) {
+					*dr = 0xFF;
+					p_SPI_handle->tx_len--;
+				}
+				else {
+					*dr = 0xFFFF;
+					p_SPI_handle->tx_len -= 2;
+				}
+			}
+			else {
+				// TX ONLY or TX_RX
+				if (dff == SPI_DFF_8BIT) {
+					*dr = *(p_SPI_handle->p_tx_buffer);
+					p_SPI_handle->p_tx_buffer++;
+					p_SPI_handle->tx_len--;
+				}
+				else if (dff == SPI_DFF_16BIT) {
+					// TODO: TEST THIS, MIGHT CAUSE A ISSUE
+					*dr = *(uint16_t*)(p_SPI_handle
+					                       ->p_tx_buffer);
+					p_SPI_handle->p_tx_buffer += 2;
+					p_SPI_handle->tx_len -= 2;
+				}
+			}
+		}
+		else {
+			p_SPI_handle->tx_busy_state = SPI_READY;
+			CLEAR_BIT(*cr2, SPI_CR2_TXEIE);
+
+			if (p_SPI_handle->op_mode == SPI_OP_TX_ONLY)
+				SPI_application_event_callback(
+				    p_SPI_handle, SPI_APP_EVENT_TX_CMPLT);
+		}
+	}
+
+	// RXNE interrupt
+
+	// Check for RXNE flag
+	uint32_t rxne_state = IS_BIT_SET(*sr, SPI_SR_RXNE_STATE);
+	// Check for RXNEIE flag
+	uint32_t rxneie_state = IS_BIT_SET(*cr2, SPI_CR2_RXNEIE);
+
+	if (rxne_state && rxneie_state) {
+		if (p_SPI_handle->rx_len > 0) {
+			uint8_t dff = p_SPI_handle->SPI_Config.SPI_DFF;
+			if (p_SPI_handle->p_rx_buffer) {
+				if (dff == SPI_DFF_8BIT) {
+					uint8_t data = (uint8_t)(*dr & 0xFF);
+					*(p_SPI_handle->p_rx_buffer) = data;
+					p_SPI_handle->p_rx_buffer++;
+					p_SPI_handle->rx_len--;
+				}
+				else if (dff == SPI_DFF_16BIT) {
+					uint16_t data =
+					    (uint16_t)(*dr & 0xFFFF);
+					*(uint16_t*)(p_SPI_handle
+					                 ->p_rx_buffer) = data;
+					p_SPI_handle->p_rx_buffer += 2;
+					p_SPI_handle->rx_len -= 2;
+				}
+			}
+			else {
+				(void)*dr;
+				if (dff == SPI_DFF_8BIT)
+					p_SPI_handle->rx_len--;
+				else
+					p_SPI_handle->rx_len -= 2;
+			}
+		}
+		else {
+			p_SPI_handle->rx_busy_state = SPI_READY;
+			CLEAR_BIT(*cr2, SPI_CR2_RXNEIE);
+
+			if (p_SPI_handle->op_mode == SPI_OP_TX_RX ||
+			    p_SPI_handle->op_mode == SPI_OP_RX_ONLY)
+				SPI_application_event_callback(
+				    p_SPI_handle, SPI_APP_EVENT_RX_CMPLT);
+		}
+	}
+
+	// Error interrupt
+
+	uint32_t errie_state = IS_BIT_SET(*cr2, SPI_CR2_ERRIE);
+	if (errie_state) {
+		// OVR
+		uint32_t ovr_state = IS_BIT_SET(*sr, SPI_SR_OVR_STATE);
+		if (ovr_state) {
+			(void)*dr;
+			(void)*sr;
+			SPI_application_event_callback(p_SPI_handle,
+			                               SPI_APP_ERR_OVR);
+		}
+		// MODF
+		uint32_t modf_state = IS_BIT_SET(*sr, SPI_SR_MODF_STATE);
+		if (modf_state) {
+			(void)*sr;
+			SPI_application_event_callback(p_SPI_handle,
+			                               SPI_APP_ERR_MODF);
+		}
+		// CRCERR
+		uint32_t crcerr_state = IS_BIT_SET(*sr, SPI_SR_CRCERR_STATE);
+		if (crcerr_state) {
+			CLEAR_BIT(*sr, SPI_SR_CRCERR_STATE);
+			SPI_application_event_callback(p_SPI_handle,
+			                               SPI_APP_ERR_CRC);
+		}
+	}
+}
+
+// NOTE: @APPLICATION_CALLBACK
+
+/********************************************************************************
+ * @fn				- SPI_application_event_callback
+ *
+ * @brief			- Application event callback function
+ *
+ * @param[*p_SPI_handle]	- Handle structure of a SPI peripheral
+ * @param[app_ev]		- Application event
+ *
+ * @return			- None
+ *
+ * @Note			- None
+ *******************************************************************************/
+
+__attribute__((weak)) void
+SPI_application_event_callback(SPI_Handle_t* p_SPI_handle,
+                               SPI_app_event_t app_ev)
+{
+	/* This is a week implementation. The application may override
+	 * this function. */
+}

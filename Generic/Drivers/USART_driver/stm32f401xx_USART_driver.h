@@ -48,7 +48,7 @@ typedef struct {
 	USART_rx_ring_t rx_buffer;					// RX buffer for USART
 } USART_Handle_t;
 
-
+// Application events
 
 typedef enum {
 	USART_APP_EVENT_TX_CMPLT = 0,					// All bytes in the TX buffer have been sent

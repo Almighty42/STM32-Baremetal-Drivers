@@ -5,7 +5,33 @@
 
 // NOTE: --- Structures for SPI ---
 
+// Ring buffer logic
+
+#define SPI_TX_BUFFER_SIZE			128
+#define SPI_RX_BUFFER_SIZE			128
+
 // Configuration structure for SPI
+
+typedef struct {
+	uint16_t buffer[SPI_TX_BUFFER_SIZE];				// Transmit ring buffer
+	volatile uint16_t head;						// Tx ring buffer head
+	volatile uint16_t tail;						// Tx ring buffer tail
+} SPI_tx_ring_t;
+
+typedef struct {
+	uint16_t buffer[SPI_RX_BUFFER_SIZE];				// Receive ring buffer
+	volatile uint16_t head;						// Rx ring buffer head
+	volatile uint16_t tail;						// Rx ring buffer tail
+} SPI_rx_ring_t;
+
+// Operation mode
+
+typedef enum {
+    SPI_OP_NONE = 0,
+    SPI_OP_TX_ONLY,
+    SPI_OP_RX_ONLY,
+    SPI_OP_TX_RX
+} SPI_op_mode_t;
 
 typedef struct
 {
@@ -24,7 +50,27 @@ typedef struct
 {
 	SPI_TypeDef* p_SPIx;						// Holds the base address of the SPI peripheral 
 	SPI_Config_t SPI_Config;					// Holds SPI peripheral configuration settings
+	uint8_t *p_tx_buffer;						// Stores application Tx buffer address
+	uint8_t *p_rx_buffer;						// Stores application Rx buffer address
+	uint32_t tx_len;						// Tx length
+	uint32_t rx_len;						// Rx length
+	uint8_t tx_busy_state;						// Is transmission in  busy state
+	uint8_t rx_busy_state;						// Is receiving in  busy state
+	SPI_tx_ring_t tx_buffer;					// TX buffer for SPI
+	SPI_rx_ring_t rx_buffer;					// RX buffer for SPI
+	SPI_op_mode_t op_mode;						// Operation mode
 } SPI_Handle_t;
+
+// Application events
+
+typedef enum {
+	SPI_APP_EVENT_TX_CMPLT = 0,					// All bytes in the TX buffer have been sent
+	SPI_APP_EVENT_RX_CMPLT,					// The expected number of bytes has been received
+	SPI_APP_ERR_OVR,						// Framing error (invalid/missing stop bit)
+	SPI_APP_ERR_MODF,						// Noise error detected during reception
+	SPI_APP_ERR_CRC,						// Overrun error (new data overwrote unread data)
+} SPI_app_event_t;
+
 
 // Function return status
 
@@ -42,6 +88,8 @@ typedef enum {
 	SPI_ERROR_INVALID_CPHA,						// CPHA value out of range
 	SPI_ERROR_INVALID_SSM,						// SSM value out of range
 	SPI_ERROR_TIMEOUT,						// SPI polling timeout
+	SPI_ERROR_NOT_ENABLED,						// SPI not enabled, but has to be 
+	SPI_ERROR_INVALID_LEN,						// Len is invalid
 	SPI_BUSY							// SPI Tx / Rx busy
 } SPI_status_t;
 
@@ -88,6 +136,12 @@ typedef enum {
 #define SPI_SSM_HW				1
 #define SPI_SSM_SW				0
 
+// NOTE: --- Application states ---
+
+#define SPI_READY				0
+#define SPI_BUSY_IN_RX				1
+#define SPI_BUSY_IN_TX				2
+
 // NOTE: --- SPI Validation macros ---
 
 #define VALIDATE_SPI_PORT(port)		do { \
@@ -105,7 +159,21 @@ typedef enum {
 #define VALIDATE_SPI_CPHA(flow)			VALIDATE_ENUM((flow), SPI_CPHA_HIGH, SPI_ERROR_INVALID_CPHA)
 #define VALIDATE_SPI_SSM(flow)			VALIDATE_ENUM((flow), SPI_SSM_HW, SPI_ERROR_INVALID_SSM)
 
+#define VALIDATE_SPI_ENABLED(port)		VALIDATE_BIT_SET((port)->CR1, SPI_CR1_SPE, SPI_ERROR_NOT_ENABLED)
+
 // NOTE: --- Bit position definitions SPI_SR ---
+
+#define SPI_SR_FRE_STATE			8
+#define SPI_SR_BSY_STATE    			7
+#define SPI_SR_OVR_STATE    			6
+#define SPI_SR_MODF_STATE   			5
+#define SPI_SR_CRCERR_STATE 			4
+#define SPI_SR_UDR_STATE    			3
+#define SPI_SR_CHSIDE_STATE 			2
+#define SPI_SR_TXE_STATE			1
+#define SPI_SR_RXNE_STATE   			0
+
+// NOTE: --- Bit position definitions SPI_SR ( bit shifting ) ---
 
 #define SPI_SR_FRE				(1U << 8)
 #define SPI_SR_BSY    				(1U << 7)
@@ -156,6 +224,7 @@ SPI_status_t SPI_write_data_pl(SPI_Handle_t* p_SPI_handle, const uint8_t* p_tx_b
 SPI_status_t SPI_read_data_pl(SPI_Handle_t* p_SPI_handle, uint8_t* p_rx_buffer, uint32_t len);
 SPI_status_t SPI_write_data_it(SPI_Handle_t *p_SPI_handle,uint8_t *p_tx_buffer, uint32_t len);
 SPI_status_t SPI_read_data_it(SPI_Handle_t *p_SPI_handle, uint8_t *p_rx_buffer, uint32_t len);
+SPI_status_t SPI_transfer_data_it(SPI_Handle_t* p_SPI_handle, uint8_t* p_tx_buffer, uint8_t* p_rx_buffer, uint32_t len);
 
 // Peripheral control API
 SPI_status_t SPI_peri_control(SPI_TypeDef* p_SPI_x, uint8_t EN_or_DI);
@@ -164,5 +233,8 @@ SPI_status_t SPI_peri_control(SPI_TypeDef* p_SPI_x, uint8_t EN_or_DI);
 SPI_status_t SPI_irq_interrupt_config(uint8_t irq_n, uint8_t EN_or_DI);
 SPI_status_t SPI_irq_priority_config(uint8_t irq_n, uint32_t irq_prio);
 void SPI_irq_handling(SPI_Handle_t *p_SPI_handle);
+
+// Application callback
+void SPI_application_event_callback(SPI_Handle_t *p_SPI_handle,SPI_app_event_t app_ev);
 
 #endif

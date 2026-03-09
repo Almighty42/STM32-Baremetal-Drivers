@@ -8,7 +8,8 @@
 /********************************************************************************
  *
  * TODO: Future plans for this driver:
- * 1. Implement DMA USART in future
+ * 1. Add helper functions to longer functions to make the code more readable
+ * 2. Implement DMA USART in future
  *
  *******************************************************************************/
 
