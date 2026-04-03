@@ -59,7 +59,6 @@ void USART2_IRQHandler(void)
 {
 	USART_irq_handling(&usart2);
 }
-// NOTE: 
 
 // Very simple printf clone for USART using ring buffer TX / RX
 static void USART_write(char str[])
