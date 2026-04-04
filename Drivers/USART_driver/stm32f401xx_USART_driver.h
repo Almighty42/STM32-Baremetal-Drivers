@@ -74,6 +74,7 @@ typedef enum {
 	USART_ERROR_INVALID_WORD_LENGTH,				// Word length out of range
 	USART_ERROR_INVALID_PARITY_CONTROL,				// Parity control out of range
 	USART_ERROR_INVALID_HARDWARE_FLOW,				// Hardware flow control out of range
+	USART_ERROR_INVALID_BAUD_RATE,					// Baud rate out of range
 	USART_ERROR_NOT_ENABLED,					// USART not enabled, but has to be
 	USART_ERROR_TX_NOT_ENABLED,					// Tx not enabled, but has to be
 	USART_ERROR_RX_NOT_ENABLED,					// Rx not enabled, but has to be
@@ -205,7 +206,8 @@ typedef enum {
 #define USART_CR2_CPHA				9
 #define USART_CR2_CPOL				10
 #define USART_CR2_CLKEN				11
-#define USART_CR2_STOP				12
+#define USART_CR2_STOP_1			12
+#define USART_CR2_STOP_2			13
 #define USART_CR2_LINEN				14
 
 
@@ -238,6 +240,12 @@ typedef enum {
 #define VALIDATE_USART_WORD_LEN(wlen)		VALIDATE_ENUM((wlen), USART_WORDLEN_9BITS, USART_ERROR_INVALID_WORD_LENGTH)
 #define VALIDATE_USART_PARITY(parity)		VALIDATE_ENUM((parity), USART_PARITY_EN_ODD, USART_ERROR_INVALID_PARITY_CONTROL)
 #define VALIDATE_USART_HW_FLOW(flow)		VALIDATE_ENUM((flow), USART_HW_FLOW_CTRL_CTS_RTS, USART_ERROR_INVALID_HARDWARE_FLOW)
+#define VALIDATE_USART_BAUD_RATE(baud)		\
+						VALIDATE_IN_RANGE((baud), \
+						((const uint32_t[]){1200U, 2400U, 9600U, 19200U, 38400U, 57600U, \
+						 115200U, 230400U, 460800U, 921600U, 2000000U, 3000000U}) \
+						 , 12, USART_ERROR_INVALID_BAUD_RATE \
+						) \
 
 #define VALIDATE_USART_ENABLED(port)		VALIDATE_BIT_SET((port)->CR1, USART_CR1_UE, USART_ERROR_NOT_ENABLED)
 #define VALIDATE_USART_TX_ENABLED(port)		VALIDATE_BIT_SET((port)->CR1, USART_CR1_TE, USART_ERROR_TX_NOT_ENABLED)
@@ -281,7 +289,7 @@ USART_status_t USART_irq_priority_config(uint8_t irq_n, uint32_t irq_prio);
 void USART_irq_handling(USART_Handle_t *p_USART_handle);
 
 // Utils
-void USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate);
+USART_status_t USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate);
 
 // Application callback
 void USART_application_event_callback(USART_Handle_t *p_USART_handle,USART_AppEvent_t app_ev);

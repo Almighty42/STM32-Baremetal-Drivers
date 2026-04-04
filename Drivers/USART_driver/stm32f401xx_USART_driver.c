@@ -8,7 +8,7 @@
 /********************************************************************************
  *
  * TODO: Future plans for this driver:
- * 1. Add helper functions to longer functions to make the code more readable
+ * 1. Keep working on helper functions...
  * 2. Implement synchronous communication
  * 2. Implement DMA USART in future
  *
@@ -81,6 +81,16 @@ USART_status_t USART_peri_clk_control(USART_TypeDef* p_USART_x,
 
 // NOTE: @INIT_DE-INIT
 
+static inline void USART_set_mode(uint8_t mode, uint32_t* cr1);
+static inline void USART_set_stop_bits(uint8_t stop_bits, uint32_t* cr2);
+static inline void USART_set_word_len(uint8_t word_len, uint32_t* cr1);
+static inline void USART_set_parity_control(uint8_t parity_control,
+                                            uint32_t* cr1);
+static inline void USART_set_hw_flow_control(uint8_t hw_flow_control,
+                                             uint32_t* cr3);
+static inline void USART_enable_error_interrupts(uint32_t* cr1, uint32_t* cr3);
+static inline void USART_initialize_buffers(USART_Handle_t* p_USART_handle);
+
 /********************************************************************************
  * @fn				- USART_init
  *
@@ -112,105 +122,42 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 
 	// Mode
 	uint8_t mode = p_USART_handle->USART_Pin_Config.USART_mode;
-
 	VALIDATE_USART_MODE(mode);
-
-	CLEAR_FIELD_2BIT(*cr1, 2);
-	if (mode == USART_MODE_ONLY_RX) {
-		SET_BIT(*cr1, 2);
-	}
-	else if (mode == USART_MODE_ONLY_TX) {
-		SET_BIT(*cr1, 3);
-	}
-	else if (mode == USART_MODE_TXRX) {
-		SET_BIT(*cr1, 2);
-		SET_BIT(*cr1, 3);
-	}
+	USART_set_mode(mode, cr1);
 
 	// Baud rate
-	USART_set_baud_rate(p_USART_handle->p_USARTx,
-	                    p_USART_handle->USART_Pin_Config.USART_baud);
+	USART_status_t status =
+	    USART_set_baud_rate(p_USART_handle->p_USARTx,
+	                        p_USART_handle->USART_Pin_Config.USART_baud);
+	if (status != USART_OK)
+		return status;
 
 	// Number of stop bits
 	uint8_t stop_bits = p_USART_handle->USART_Pin_Config.USART_n_stop_bits;
-
 	VALIDATE_USART_STOP_BITS(stop_bits);
+	USART_set_stop_bits(stop_bits, cr2);
 
-	CLEAR_FIELD_2BIT(*cr2, 12);
-	if (stop_bits == USART_STOPBITS_0_5) {
-		SET_BIT(*cr2, 12);
-	}
-	else if (stop_bits == USART_STOPBITS_1) {
-		// Already cleared bits for USART_STOPBITS_1
-	}
-	else if (stop_bits == USART_STOPBITS_1_5) {
-		SET_BIT(*cr2, 12);
-		SET_BIT(*cr2, 13);
-	}
-	else if (stop_bits == USART_STOPBITS_2) {
-		SET_BIT(*cr2, 13);
-	}
 	// Word length
 	uint8_t word_len = p_USART_handle->USART_Pin_Config.USART_word_len;
-
 	VALIDATE_USART_WORD_LEN(word_len);
-
-	CLEAR_BIT(*cr1, 12);
-	if (word_len == USART_WORDLEN_8BITS) {
-		// Already cleared bits for USART_STOPBITS_1
-	}
-	else if (word_len == USART_WORDLEN_9BITS) {
-		SET_BIT(*cr1, 12);
-	}
+	USART_set_word_len(word_len, cr1);
 
 	// Parity control
 	uint8_t parity_control =
 	    p_USART_handle->USART_Pin_Config.USART_parity_control;
-
 	VALIDATE_USART_PARITY(parity_control);
-
-	CLEAR_BIT(*cr1, 10);
-	if (parity_control == USART_PARITY_DISABLE) {
-		// Already cleared bits for USART_STOPBITS_1
-	}
-	else if (parity_control == USART_PARITY_EN_EVEN) {
-		SET_BIT(*cr1, 10);
-		CLEAR_BIT(*cr1, 9);
-	}
-	else if (parity_control == USART_PARITY_EN_ODD) {
-		SET_BIT(*cr1, 10);
-		SET_BIT(*cr1, 9);
-	}
+	USART_set_parity_control(parity_control, cr1);
 
 	// Hardware flow control
 	uint8_t hw_flow_control =
 	    p_USART_handle->USART_Pin_Config.USART_hw_flow_control;
-
 	VALIDATE_USART_HW_FLOW(hw_flow_control);
-
-	CLEAR_FIELD_2BIT(*cr3, 8);
-	if (hw_flow_control == USART_HW_FLOW_CTRL_NONE) {
-		// Already cleared bits for USART_STOPBITS_1
-	}
-	else if (hw_flow_control == USART_HW_FLOW_CTRL_CTS) {
-		SET_BIT(*cr3, 9);
-	}
-	else if (hw_flow_control == USART_HW_FLOW_CTRL_RTS) {
-		SET_BIT(*cr3, 8);
-	}
-	else if (hw_flow_control == USART_HW_FLOW_CTRL_CTS_RTS) {
-		SET_BIT(*cr3, 8);
-		SET_BIT(*cr3, 9);
-	}
+	USART_set_hw_flow_control(hw_flow_control, cr3);
 
 	// Initializes buffers
-	p_USART_handle->tx_buffer.head = p_USART_handle->tx_buffer.tail = 0;
-	p_USART_handle->rx_buffer.head = p_USART_handle->rx_buffer.tail = 0;
+	USART_initialize_buffers(p_USART_handle);
 
-	// Enables RXNE and error interrupts
-	SET_BIT(*cr1, USART_CR1_RXNEIE);
-	SET_BIT(*cr3, USART_CR3_EIE);
-
+	USART_enable_error_interrupts();
 	return USART_OK;
 }
 
@@ -247,6 +194,101 @@ USART_status_t USART_de_init(USART_TypeDef* p_USART_x)
 	}
 
 	return status;
+}
+
+static inline void USART_set_mode(uint8_t mode, uint32_t* cr1)
+{
+	CLEAR_BIT(*cr1, USART_CR1_RE);
+	CLEAR_BIT(*cr1, USART_CR1_TE);
+	if (mode == USART_MODE_ONLY_RX) {
+		SET_BIT(*cr1, USART_CR1_RE);
+	}
+	else if (mode == USART_MODE_ONLY_TX) {
+		SET_BIT(*cr1, USART_CR1_TE);
+	}
+	else if (mode == USART_MODE_TXRX) {
+		SET_BIT(*cr1, USART_CR1_RE);
+		SET_BIT(*cr1, USART_CR1_TE);
+	}
+}
+
+static inline void USART_set_stop_bits(uint8_t stop_bits, uint32_t* cr2)
+{
+	CLEAR_BIT(*cr2, USART_CR2_STOP_1);
+	CLEAR_BIT(*cr2, USART_CR2_STOP_2);
+	if (stop_bits == USART_STOPBITS_0_5) {
+		SET_BIT(*cr2, USART_CR2_STOP_1);
+	}
+	else if (stop_bits == USART_STOPBITS_1) {
+		// Already cleared bits for USART_STOPBITS_1
+	}
+	else if (stop_bits == USART_STOPBITS_1_5) {
+		SET_BIT(*cr2, USART_CR2_STOP_1);
+		SET_BIT(*cr2, USART_CR2_STOP_2);
+	}
+	else if (stop_bits == USART_STOPBITS_2) {
+		SET_BIT(*cr2, USART_CR2_STOP_2);
+	}
+}
+
+static inline void USART_set_word_len(uint8_t word_len, uint32_t* cr1)
+{
+	CLEAR_BIT(*cr1, USART_CR1_M);
+	if (word_len == USART_WORDLEN_8BITS) {
+		// Already cleared bits for USART_CR1_M
+	}
+	else if (word_len == USART_WORDLEN_9BITS) {
+		SET_BIT(*cr1, USART_CR1_M);
+	}
+}
+
+static inline void USART_set_parity_control(uint8_t parity_control,
+                                            uint32_t* cr1)
+{
+	CLEAR_BIT(*cr1, USART_CR1_PCE);
+	if (parity_control == USART_PARITY_DISABLE) {
+		// Already cleared bits for USART_CR1_PCE
+	}
+	else if (parity_control == USART_PARITY_EN_EVEN) {
+		SET_BIT(*cr1, USART_CR1_PCE);
+		CLEAR_BIT(*cr1, USART_CR1_PS);
+	}
+	else if (parity_control == USART_PARITY_EN_ODD) {
+		SET_BIT(*cr1, USART_CR1_PCE);
+		SET_BIT(*cr1, USART_CR1_PS);
+	}
+}
+
+static inline void USART_set_hw_flow_control(uint8_t hw_flow_control,
+                                             uint32_t* cr3)
+{
+	CLEAR_BIT(*cr3, USART_CR3_RTSE);
+	CLEAR_BIT(*cr3, USART_CR3_CTSE);
+	if (hw_flow_control == USART_HW_FLOW_CTRL_NONE) {
+		// Already cleared bits for USART_CR3_RTSE / CTSE
+	}
+	else if (hw_flow_control == USART_HW_FLOW_CTRL_CTS) {
+		SET_BIT(*cr3, USART_CR3_CTSE);
+	}
+	else if (hw_flow_control == USART_HW_FLOW_CTRL_RTS) {
+		SET_BIT(*cr3, USART_CR3_RTSE);
+	}
+	else if (hw_flow_control == USART_HW_FLOW_CTRL_CTS_RTS) {
+		SET_BIT(*cr3, USART_CR3_RTSE);
+		SET_BIT(*cr3, USART_CR3_CTSE);
+	}
+}
+
+static inline void USART_enable_error_interrupts(uint32_t* cr1, uint32_t* cr3)
+{
+	SET_BIT(*cr1, USART_CR1_RXNEIE);
+	SET_BIT(*cr3, USART_CR3_EIE);
+}
+
+static inline void USART_initialize_buffers(USART_Handle_t* p_USART_handle)
+{
+	p_USART_handle->tx_buffer.head = p_USART_handle->tx_buffer.tail = 0;
+	p_USART_handle->rx_buffer.head = p_USART_handle->rx_buffer.tail = 0;
 }
 
 // NOTE: @RING_BUFFER_LOGIC
@@ -921,13 +963,18 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
  * @param[*p_USART_x]		- Base address of the USART peripheral
  * @param[baud_rate]		- Baud rate to set
  *
- * @return			- None
+ * @return			- Success / Failure status of the function
  *
  * @Note			- None
  *******************************************************************************/
 
-void USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate)
+static inline USART_status_t USART_set_baud_rate(USART_TypeDef* p_USART_x,
+                                                 uint32_t baud_rate)
 {
+	VALIDATE_USART_PORT(p_USART_x);
+
+	VALIDATE_USART_BAUD_RATE(baud_rate);
+
 	uint32_t pclk_x;
 
 	uint32_t usart_div;
@@ -974,6 +1021,8 @@ void USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate)
 
 	// Copy the value of tempreg in to BRR register
 	p_USART_x->BRR = temp_reg;
+
+	return USART_OK;
 }
 
 // NOTE: @APPLICATION_CALLBACK

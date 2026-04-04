@@ -109,35 +109,48 @@
 
 // NOTE: --- Validation macros ---
 
-#define VALIDATE_RANGE(val, min, max, err_code)	do { \
-							if ((val) < (min) || (val) > (max)) { \
-								return (err_code); \
-							} \
-						} while(0)
+#define VALIDATE_RANGE(val, min, max, err_code)		do { \
+								if ((val) < (min) || (val) > (max)) { \
+									return (err_code); \
+								} \
+							} while(0)
 
-#define VALIDATE_PTR(ptr, err_code)		do { \
-							if ((ptr) == NULL) { \
-								return (err_code); \
-							} \
-						} while(0)
+#define VALIDATE_PTR(ptr, err_code)			do { \
+								if ((ptr) == NULL) { \
+									return (err_code); \
+								} \
+							} while(0)
 
 #define VALIDATE_EN_DI(EN_or_DI, err_code)		do { \
-							if ((EN_or_DI) != ENABLE && \
-								(EN_or_DI) != DISABLE) { \
-								return (err_code); \
-							} \
-						} while (0)
-#define VALIDATE_BIT_SET(reg, bit, err_code)	do { \
-							if (!IS_BIT_SET((reg), (bit))) { \
-								return (err_code); \
-							} \
-						} while(0)
+								if ((EN_or_DI) != ENABLE && \
+									(EN_or_DI) != DISABLE) { \
+									return (err_code); \
+								} \
+							} while (0)
 
-#define VALIDATE_ENUM(val, max_val, err_code)	do { \
-							if ((val) > (max_val)) { \
-								return (err_code); \
-							} \
-						} while(0)
+#define VALIDATE_BIT_SET(reg, bit, err_code)		do { \
+								if (!IS_BIT_SET((reg), (bit))) { \
+									return (err_code); \
+								} \
+							} while(0)
+
+#define VALIDATE_ENUM(val, max_val, err_code)		do { \
+								if ((val) > (max_val)) { \
+									return (err_code); \
+								} \
+							} while(0)
+
+#define VALIDATE_IN_RANGE(val, range, len, err_code)	\
+							do { \
+								uint8_t found = 0; \
+								for (uint32_t i = 0;i < len;i++) { \
+									if ((val) == (range)[i]) { \
+										found = 1;	\
+										break;		\
+									} \
+								} \
+								if (!found) return (err_code)	\
+							} while(0)	\
 
 #define VALIDATE_IRQ_NUMBER(irq, err_code)	VALIDATE_RANGE((irq), 0U, 83U, err_code)
 
