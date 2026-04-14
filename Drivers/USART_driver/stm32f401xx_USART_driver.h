@@ -289,7 +289,7 @@ USART_status_t USART_irq_priority_config(uint8_t irq_n, uint32_t irq_prio);
 void USART_irq_handling(USART_Handle_t *p_USART_handle);
 
 // Utils
-USART_status_t USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate);
+// USART_status_t USART_set_baud_rate(USART_TypeDef* p_USART_x, uint32_t baud_rate);
 
 // Application callback
 void USART_application_event_callback(USART_Handle_t *p_USART_handle,USART_AppEvent_t app_ev);

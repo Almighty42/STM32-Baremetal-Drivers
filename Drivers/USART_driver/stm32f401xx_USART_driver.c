@@ -8,8 +8,7 @@
 /********************************************************************************
  *
  * TODO: Future plans for this driver:
- * 1. Keep working on helper functions...
- * 2. Implement synchronous communication
+ * 1. Implement synchronous communication
  * 2. Implement DMA USART in future
  *
  *******************************************************************************/
@@ -81,15 +80,25 @@ USART_status_t USART_peri_clk_control(USART_TypeDef* p_USART_x,
 
 // NOTE: @INIT_DE-INIT
 
-static inline void USART_set_mode(uint8_t mode, uint32_t* cr1);
-static inline void USART_set_stop_bits(uint8_t stop_bits, uint32_t* cr2);
-static inline void USART_set_word_len(uint8_t word_len, uint32_t* cr1);
-static inline void USART_set_parity_control(uint8_t parity_control,
-                                            uint32_t* cr1);
-static inline void USART_set_hw_flow_control(uint8_t hw_flow_control,
-                                             uint32_t* cr3);
-static inline void USART_enable_error_interrupts(uint32_t* cr1, uint32_t* cr3);
+/********************************************************************************
+ * - USART_int ( STATIC ) HELPER FUNCTIONS PROTOTYPES
+ *******************************************************************************/
+
+static inline void USART_set_mode(volatile uint8_t mode,
+                                  volatile uint32_t* cr1);
+static inline void USART_set_stop_bits(volatile uint8_t stop_bits,
+                                       volatile uint32_t* cr2);
+static inline void USART_set_word_len(volatile uint8_t word_len,
+                                      volatile uint32_t* cr1);
+static inline void USART_set_parity_control(volatile uint8_t parity_control,
+                                            volatile uint32_t* cr1);
+static inline void USART_set_hw_flow_control(volatile uint8_t hw_flow_control,
+                                             volatile uint32_t* cr3);
+static inline void USART_enable_error_interrupts(volatile uint32_t* cr1,
+                                                 volatile uint32_t* cr3);
 static inline void USART_initialize_buffers(USART_Handle_t* p_USART_handle);
+static inline USART_status_t USART_set_baud_rate(USART_TypeDef* p_USART_x,
+                                                 volatile uint32_t baud_rate);
 
 /********************************************************************************
  * @fn				- USART_init
@@ -157,8 +166,110 @@ USART_status_t USART_init(USART_Handle_t* p_USART_handle)
 	// Initializes buffers
 	USART_initialize_buffers(p_USART_handle);
 
-	USART_enable_error_interrupts();
+	USART_enable_error_interrupts(cr1, cr3);
 	return USART_OK;
+}
+
+/********************************************************************************
+ * - USART_int HELPER FUNCTIONS
+ *******************************************************************************/
+
+static inline void USART_set_mode(volatile uint8_t mode, volatile uint32_t* cr1)
+{
+	CLEAR_BIT(*cr1, USART_CR1_RE);
+	CLEAR_BIT(*cr1, USART_CR1_TE);
+	if (mode == USART_MODE_ONLY_RX) {
+		SET_BIT(*cr1, USART_CR1_RE);
+	}
+	else if (mode == USART_MODE_ONLY_TX) {
+		SET_BIT(*cr1, USART_CR1_TE);
+	}
+	else if (mode == USART_MODE_TXRX) {
+		SET_BIT(*cr1, USART_CR1_RE);
+		SET_BIT(*cr1, USART_CR1_TE);
+	}
+}
+
+static inline void USART_set_stop_bits(volatile uint8_t stop_bits,
+                                       volatile uint32_t* cr2)
+{
+	CLEAR_BIT(*cr2, USART_CR2_STOP_1);
+	CLEAR_BIT(*cr2, USART_CR2_STOP_2);
+	if (stop_bits == USART_STOPBITS_0_5) {
+		SET_BIT(*cr2, USART_CR2_STOP_1);
+	}
+	else if (stop_bits == USART_STOPBITS_1) {
+		// Already cleared bits for USART_STOPBITS_1
+	}
+	else if (stop_bits == USART_STOPBITS_1_5) {
+		SET_BIT(*cr2, USART_CR2_STOP_1);
+		SET_BIT(*cr2, USART_CR2_STOP_2);
+	}
+	else if (stop_bits == USART_STOPBITS_2) {
+		SET_BIT(*cr2, USART_CR2_STOP_2);
+	}
+}
+
+static inline void USART_set_word_len(volatile uint8_t word_len,
+                                      volatile uint32_t* cr1)
+{
+	CLEAR_BIT(*cr1, USART_CR1_M);
+	if (word_len == USART_WORDLEN_8BITS) {
+		// Already cleared bits for USART_CR1_M
+	}
+	else if (word_len == USART_WORDLEN_9BITS) {
+		SET_BIT(*cr1, USART_CR1_M);
+	}
+}
+
+static inline void USART_set_parity_control(volatile uint8_t parity_control,
+                                            volatile uint32_t* cr1)
+{
+	CLEAR_BIT(*cr1, USART_CR1_PCE);
+	if (parity_control == USART_PARITY_DISABLE) {
+		// Already cleared bits for USART_CR1_PCE
+	}
+	else if (parity_control == USART_PARITY_EN_EVEN) {
+		SET_BIT(*cr1, USART_CR1_PCE);
+		CLEAR_BIT(*cr1, USART_CR1_PS);
+	}
+	else if (parity_control == USART_PARITY_EN_ODD) {
+		SET_BIT(*cr1, USART_CR1_PCE);
+		SET_BIT(*cr1, USART_CR1_PS);
+	}
+}
+
+static inline void USART_set_hw_flow_control(volatile uint8_t hw_flow_control,
+                                             volatile uint32_t* cr3)
+{
+	CLEAR_BIT(*cr3, USART_CR3_RTSE);
+	CLEAR_BIT(*cr3, USART_CR3_CTSE);
+	if (hw_flow_control == USART_HW_FLOW_CTRL_NONE) {
+		// Already cleared bits for USART_CR3_RTSE / CTSE
+	}
+	else if (hw_flow_control == USART_HW_FLOW_CTRL_CTS) {
+		SET_BIT(*cr3, USART_CR3_CTSE);
+	}
+	else if (hw_flow_control == USART_HW_FLOW_CTRL_RTS) {
+		SET_BIT(*cr3, USART_CR3_RTSE);
+	}
+	else if (hw_flow_control == USART_HW_FLOW_CTRL_CTS_RTS) {
+		SET_BIT(*cr3, USART_CR3_RTSE);
+		SET_BIT(*cr3, USART_CR3_CTSE);
+	}
+}
+
+static inline void USART_enable_error_interrupts(volatile uint32_t* cr1,
+                                                 volatile uint32_t* cr3)
+{
+	SET_BIT(*cr1, USART_CR1_RXNEIE);
+	SET_BIT(*cr3, USART_CR3_EIE);
+}
+
+static inline void USART_initialize_buffers(USART_Handle_t* p_USART_handle)
+{
+	p_USART_handle->tx_buffer.head = p_USART_handle->tx_buffer.tail = 0;
+	p_USART_handle->rx_buffer.head = p_USART_handle->rx_buffer.tail = 0;
 }
 
 /********************************************************************************
@@ -194,101 +305,6 @@ USART_status_t USART_de_init(USART_TypeDef* p_USART_x)
 	}
 
 	return status;
-}
-
-static inline void USART_set_mode(uint8_t mode, uint32_t* cr1)
-{
-	CLEAR_BIT(*cr1, USART_CR1_RE);
-	CLEAR_BIT(*cr1, USART_CR1_TE);
-	if (mode == USART_MODE_ONLY_RX) {
-		SET_BIT(*cr1, USART_CR1_RE);
-	}
-	else if (mode == USART_MODE_ONLY_TX) {
-		SET_BIT(*cr1, USART_CR1_TE);
-	}
-	else if (mode == USART_MODE_TXRX) {
-		SET_BIT(*cr1, USART_CR1_RE);
-		SET_BIT(*cr1, USART_CR1_TE);
-	}
-}
-
-static inline void USART_set_stop_bits(uint8_t stop_bits, uint32_t* cr2)
-{
-	CLEAR_BIT(*cr2, USART_CR2_STOP_1);
-	CLEAR_BIT(*cr2, USART_CR2_STOP_2);
-	if (stop_bits == USART_STOPBITS_0_5) {
-		SET_BIT(*cr2, USART_CR2_STOP_1);
-	}
-	else if (stop_bits == USART_STOPBITS_1) {
-		// Already cleared bits for USART_STOPBITS_1
-	}
-	else if (stop_bits == USART_STOPBITS_1_5) {
-		SET_BIT(*cr2, USART_CR2_STOP_1);
-		SET_BIT(*cr2, USART_CR2_STOP_2);
-	}
-	else if (stop_bits == USART_STOPBITS_2) {
-		SET_BIT(*cr2, USART_CR2_STOP_2);
-	}
-}
-
-static inline void USART_set_word_len(uint8_t word_len, uint32_t* cr1)
-{
-	CLEAR_BIT(*cr1, USART_CR1_M);
-	if (word_len == USART_WORDLEN_8BITS) {
-		// Already cleared bits for USART_CR1_M
-	}
-	else if (word_len == USART_WORDLEN_9BITS) {
-		SET_BIT(*cr1, USART_CR1_M);
-	}
-}
-
-static inline void USART_set_parity_control(uint8_t parity_control,
-                                            uint32_t* cr1)
-{
-	CLEAR_BIT(*cr1, USART_CR1_PCE);
-	if (parity_control == USART_PARITY_DISABLE) {
-		// Already cleared bits for USART_CR1_PCE
-	}
-	else if (parity_control == USART_PARITY_EN_EVEN) {
-		SET_BIT(*cr1, USART_CR1_PCE);
-		CLEAR_BIT(*cr1, USART_CR1_PS);
-	}
-	else if (parity_control == USART_PARITY_EN_ODD) {
-		SET_BIT(*cr1, USART_CR1_PCE);
-		SET_BIT(*cr1, USART_CR1_PS);
-	}
-}
-
-static inline void USART_set_hw_flow_control(uint8_t hw_flow_control,
-                                             uint32_t* cr3)
-{
-	CLEAR_BIT(*cr3, USART_CR3_RTSE);
-	CLEAR_BIT(*cr3, USART_CR3_CTSE);
-	if (hw_flow_control == USART_HW_FLOW_CTRL_NONE) {
-		// Already cleared bits for USART_CR3_RTSE / CTSE
-	}
-	else if (hw_flow_control == USART_HW_FLOW_CTRL_CTS) {
-		SET_BIT(*cr3, USART_CR3_CTSE);
-	}
-	else if (hw_flow_control == USART_HW_FLOW_CTRL_RTS) {
-		SET_BIT(*cr3, USART_CR3_RTSE);
-	}
-	else if (hw_flow_control == USART_HW_FLOW_CTRL_CTS_RTS) {
-		SET_BIT(*cr3, USART_CR3_RTSE);
-		SET_BIT(*cr3, USART_CR3_CTSE);
-	}
-}
-
-static inline void USART_enable_error_interrupts(uint32_t* cr1, uint32_t* cr3)
-{
-	SET_BIT(*cr1, USART_CR1_RXNEIE);
-	SET_BIT(*cr3, USART_CR3_EIE);
-}
-
-static inline void USART_initialize_buffers(USART_Handle_t* p_USART_handle)
-{
-	p_USART_handle->tx_buffer.head = p_USART_handle->tx_buffer.tail = 0;
-	p_USART_handle->rx_buffer.head = p_USART_handle->rx_buffer.tail = 0;
 }
 
 // NOTE: @RING_BUFFER_LOGIC
@@ -775,6 +791,34 @@ USART_status_t USART_irq_priority_config(uint8_t irq_n, uint32_t irq_prio)
 }
 
 /********************************************************************************
+ * - USART_irq_handling ( STATIC ) HELPER FUNCTIONS PROTOTYPES
+ *******************************************************************************/
+
+static inline void USART_handle_tc(volatile uint32_t* sr,
+                                   volatile uint32_t* cr1,
+                                   USART_Handle_t* p_USART_handle);
+static inline void USART_handle_txe(volatile uint32_t* sr,
+                                    volatile uint32_t* cr1,
+                                    volatile uint32_t* dr,
+                                    USART_Handle_t* p_USART_handle);
+static inline void USART_handle_rxne(volatile uint32_t* sr,
+                                     volatile uint32_t* cr1,
+                                     volatile uint32_t* dr,
+                                     USART_Handle_t* p_USART_handle);
+static inline void USART_handle_cts(volatile uint32_t* sr,
+                                    volatile uint32_t* cr3,
+                                    USART_Handle_t* p_USART_handle);
+static inline void USART_handle_idle(volatile uint32_t* sr,
+                                     volatile uint32_t* cr1,
+                                     USART_Handle_t* p_USART_handle);
+static inline void USART_handle_ore(volatile uint32_t* sr,
+                                    volatile uint32_t* cr1,
+                                    USART_Handle_t* p_USART_handle);
+static inline void USART_handle_errors(volatile uint32_t* sr,
+                                       volatile uint32_t* cr3,
+                                       USART_Handle_t* p_USART_handle);
+
+/********************************************************************************
  * @fn				- USART_irq_handling
  *
  * @brief			- Handles USART interrupts
@@ -793,11 +837,36 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 	volatile uint32_t* sr = &p_USART_handle->p_USARTx->SR;
 	volatile uint32_t* dr = &p_USART_handle->p_USARTx->DR;
 
-	uint8_t word_len = p_USART_handle->USART_Pin_Config.USART_word_len;
-	uint8_t parity_control =
-	    p_USART_handle->USART_Pin_Config.USART_parity_control;
+	// TC
+	USART_handle_tc(sr, cr1, p_USART_handle);
 
-	// uint16_t* p_data;
+	// TXE
+	USART_handle_txe(sr, cr1, dr, p_USART_handle);
+
+	// RXNE
+	USART_handle_rxne(sr, cr1, dr, p_USART_handle);
+
+	// CTS
+	USART_handle_cts(sr, cr3, p_USART_handle);
+
+	// IDLE
+	USART_handle_idle(sr, cr1, p_USART_handle);
+
+	// ORE
+	USART_handle_ore(sr, cr1, p_USART_handle);
+
+	// Errors
+	USART_handle_errors(sr, cr3, p_USART_handle);
+}
+
+/********************************************************************************
+ * - USART_irq_handling HELPER FUNCTIONS
+ *******************************************************************************/
+
+static inline void USART_handle_tc(volatile uint32_t* sr,
+                                   volatile uint32_t* cr1,
+                                   USART_Handle_t* p_USART_handle)
+{
 	// Check state of TC bit in SR
 	uint32_t tc_state = IS_BIT_SET(*sr, USART_SR_TC);
 	// Check state of TCEIE bit
@@ -820,7 +889,13 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 			}
 		}
 	}
+}
 
+static inline void USART_handle_txe(volatile uint32_t* sr,
+                                    volatile uint32_t* cr1,
+                                    volatile uint32_t* dr,
+                                    USART_Handle_t* p_USART_handle)
+{
 	// Check for TXE flag
 	uint32_t txe_state = IS_BIT_SET(*sr, USART_SR_TXE);
 	// Check for TXEIE flag
@@ -837,6 +912,16 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 			tb->tail = buffer_next(tb->tail, USART_TX_BUFFER_SIZE);
 		}
 	}
+}
+
+static inline void USART_handle_rxne(volatile uint32_t* sr,
+                                     volatile uint32_t* cr1,
+                                     volatile uint32_t* dr,
+                                     USART_Handle_t* p_USART_handle)
+{
+	uint8_t word_len = p_USART_handle->USART_Pin_Config.USART_word_len;
+	uint8_t parity_control =
+	    p_USART_handle->USART_Pin_Config.USART_parity_control;
 
 	// Check for RXNE flag
 	uint32_t rxne_state = IS_BIT_SET(*sr, USART_SR_RXNE);
@@ -865,7 +950,12 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 			rb->head = next;
 		}
 	}
+}
 
+static inline void USART_handle_cts(volatile uint32_t* sr,
+                                    volatile uint32_t* cr3,
+                                    USART_Handle_t* p_USART_handle)
+{
 	// Check for CTS flag
 	uint32_t cts_state = IS_BIT_SET(*sr, USART_SR_CTS);
 	// Check for CTSE flag
@@ -880,7 +970,12 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 		USART_application_event_callback(p_USART_handle,
 		                                 USART_EVENT_CTS);
 	}
+}
 
+static inline void USART_handle_idle(volatile uint32_t* sr,
+                                     volatile uint32_t* cr1,
+                                     USART_Handle_t* p_USART_handle)
+{
 	// Check for IDLE flag
 	uint32_t idle_state = IS_BIT_SET(*sr, USART_SR_IDLE);
 	// Check for IDLEIE flag
@@ -892,18 +987,28 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
 		USART_application_event_callback(p_USART_handle,
 		                                 USART_EVENT_IDLE);
 	}
+}
 
+static inline void USART_handle_ore(volatile uint32_t* sr,
+                                    volatile uint32_t* cr1,
+                                    USART_Handle_t* p_USART_handle)
+{
 	// Check for ORE flag
-	// uint32_t ore_state = IS_BIT_SET(*sr, USART_SR_ORE);
-	// Check for RXNEIE
-	// rxneie_state = IS_BIT_SET(*cr1, USART_CR1_RXNEIE);
+	uint32_t ore_state = IS_BIT_SET(*sr, USART_SR_ORE);
+	// Check for RXNEIE flag
+	uint32_t rxneie_state = IS_BIT_SET(*cr1, USART_CR1_RXNEIE);
 
-	// if (ore_state && rxneie_state) {
-	// 	// Need not to clear the ORE flag here, instead give an api for
-	// 	// the application to clear the ORE flag .
-	// 	USART_application_event_callback(p_USART_handle, USART_ERR_ORE);
-	// }
+	if (ore_state && rxneie_state) {
+		// Need not to clear the ORE flag here, instead give an api for
+		// the application to clear the ORE flag .
+		USART_application_event_callback(p_USART_handle, USART_ERR_ORE);
+	}
+}
 
+static inline void USART_handle_errors(volatile uint32_t* sr,
+                                       volatile uint32_t* cr3,
+                                       USART_Handle_t* p_USART_handle)
+{
 	// Check for error flag
 	uint32_t eie_state = IS_BIT_SET(*cr3, USART_CR3_EIE);
 
@@ -963,7 +1068,8 @@ void USART_irq_handling(USART_Handle_t* p_USART_handle)
  * @param[*p_USART_x]		- Base address of the USART peripheral
  * @param[baud_rate]		- Baud rate to set
  *
- * @return			- Success / Failure status of the function
+ * @return			- Success / Failure status of the
+ * function
  *
  * @Note			- None
  *******************************************************************************/

@@ -149,7 +149,7 @@
 										break;		\
 									} \
 								} \
-								if (!found) return (err_code)	\
+								if (!found) return (err_code);	\
 							} while(0)	\
 
 #define VALIDATE_IRQ_NUMBER(irq, err_code)	VALIDATE_RANGE((irq), 0U, 83U, err_code)
